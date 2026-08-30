@@ -1,0 +1,87 @@
+# ---------------------------------------------------------------- secrets
+# Never commit. Created by hand on the server and locally; see docs/05-deployment.md
+config/config.php
+deploy/deploy.conf
+# The .example counterparts ARE committed - placeholders only, no real values.
+.env
+.env.*
+!.env.example
+
+# ---------------------------------------------------------------- build output
+dist/
+node_modules/
+vendor/
+.vite/
+*.tsbuildinfo
+
+# bun.lockb and composer.lock ARE committed - reproducible installs
+
+# ---------------------------------------------------------------- runtime data
+# Uploaded avatars are user data, not source. Backed up by deploy/backup.sh.
+public_html/avatars/*
+!public_html/avatars/.gitkeep
+
+# Local database dumps and avatar pulls made by the deploy scripts
+backups/
+
+# ---------------------------------------------------------------- php
+.phpunit.result.cache
+.phpunit.cache/
+composer.phar
+
+# ---------------------------------------------------------------- logs
+*.log
+npm-debug.log*
+yarn-error.log*
+bun-debug.log*
+
+# ---------------------------------------------------------------- macOS
+.DS_Store
+.DS_Store?
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+Icon?
+
+# ---------------------------------------------------------------- Nextcloud
+# This repo lives inside ~/Nextcloud, so sync artefacts land in the working tree.
+*conflicted copy*
+*_conflict-*
+.nextcloudsync.log
+.owncloudsync.log
+._sync_*.db*
+.sync_*.db*
+*.~lock.*#
+
+# ---------------------------------------------------------------- editors
+.idea/
+.zed/
+*.swp
+*.swo
+*~
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# ---------------------------------------------------------------- claude code
+.claude/settings.local.json
+.claude/.cc-writes/
+.claude/data/
+.claude/logs/
+
+# ---------------------------------------------------------------- windows / linux
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.directory
+
+# ---------------------------------------------------------------- scratch notes
+# Working notes only. The source material the specs cite lives in docs/reference/
+# and IS tracked.
+scratchpad/

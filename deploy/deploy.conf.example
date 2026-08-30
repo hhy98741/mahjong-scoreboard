@@ -1,0 +1,19 @@
+# Copy to deploy/deploy.conf and fill in your own values.
+#
+# deploy.conf is gitignored and is the ONLY place host-specific details live.
+# Nothing in the tracked repo should ever contain a real domain, username,
+# or server path.
+
+# SSH alias from ~/.ssh/config - carries the hostname, port, user and key,
+# so none of those appear here either.
+REMOTE=my-server
+
+# Public URL. Used by deploy.sh for the post-deploy smoke test.
+SITE=https://mahjong.example.com
+
+# Apache document root for the site.
+DOCROOT=/home/USER/sites/mahjong.example.com
+
+# PHP source, deliberately OUTSIDE the document root.
+# Convention: same folder name as the docroot, under ~/apps instead of ~/sites.
+APPDIR=/home/USER/apps/mahjong.example.com
