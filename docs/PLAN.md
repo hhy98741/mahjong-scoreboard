@@ -15,14 +15,18 @@ looking right.
 
 Repo skeleton, tooling, and a request that reaches PHP and comes back as JSON.
 
-- `git init`, `.gitignore` (`config/config.php`, `deploy/deploy.conf`, `node_modules/`,
-  `dist/`, `vendor/`, `backups/`, `.DS_Store`, `public_html/avatars/*`).
+- `git init` and `.gitignore` are **already done** — the repo exists and the ignore file is
+  committed. Start at `package.json`.
 - `package.json` with the Bun scripts from `CLAUDE.md`; `composer.json` with PHPUnit as
   the only (dev) dependency.
 - `app/bootstrap.php`: autoloader, config load, JSON error handler that never leaks
   internals.
 - `Http/Router.php`, `Request.php`, `Response.php`. One route: `GET /api/health` →
-  `{"ok":true,"data":{"status":"ok","php":"8.x"}}`.
+  `{"ok":true,"data":{"status":"ok","php":"8.x"}}`. It touches no database, and it is
+  **exempt from auth** for the whole life of the project — `deploy.sh` smoke-tests it.
+- `public_html/router.php` — the four-line dev-server router from `03-api.md` § Layout.
+  Without it `php -S` serves paths literally and `/api/health` 404s. There is **no**
+  `.htaccess` under `public_html/`.
 - `Repo/Db.php`: PDO factory, `ERRMODE_EXCEPTION`, `ATTR_EMULATE_PREPARES => false`,
   `utf8mb4`.
 - `config/config.example.php` committed; a real local `config/config.php` created.
@@ -30,7 +34,8 @@ Repo skeleton, tooling, and a request that reaches PHP and comes back as JSON.
   through the dev proxy.
 
 **Done when:** `bun run dev` and `bun run serve:api` are both running and the browser
-shows the health payload fetched from PHP.
+shows the health payload fetched from PHP. Also verify `curl -s localhost:8080/api/health`
+returns the JSON directly — that proves `router.php` works, not just the Vite proxy.
 
 ---
 
@@ -41,13 +46,16 @@ shows the health payload fetched from PHP.
 - `bin/migrate.php` — applies `migrations/*.sql` in filename order, records them in
   `schema_migrations`, is idempotent, and refuses to run half a file (each migration in
   a transaction where the statements permit it).
-- `migrations/001_initial.sql` — the full schema.
-- `bin/seed.php` — the "Hong Kong Standard" ruleset and its 14 points rows.
+- `migrations/001_initial.sql` — the full schema, **including `login_attempts`**. Schema
+  only: no seed data in any migration, ever.
+- `bin/seed.php` — the "Hong Kong Standard" ruleset and its 14 points rows. Idempotent:
+  it inserts only if no ruleset of that name exists and never overwrites the owner's edits.
 - `bin/verify.php` — stub for now; it will grow the consistency checks from
   `docs/02-scoring-engine.md` § Replay.
 
 **Done when:** a dropped database can be rebuilt from scratch with
-`php bin/migrate.php && php bin/seed.php`, twice in a row, with no errors.
+`php bin/migrate.php && php bin/seed.php`, twice in a row, with no errors — and the second
+`seed.php` leaves a hand-edited `base_points` value untouched.
 
 ---
 
@@ -55,14 +63,23 @@ shows the health payload fetched from PHP.
 
 **Read:** `docs/03-api.md` § Auth
 
-- `bin/create-user.php` with hidden password entry.
+- `bin/create-user.php --username= --display-name= [--admin]`, hidden password entry.
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`.
-- `Http/Middleware/Auth.php` guarding every non-auth route.
-- Session cookie flags, id regeneration on login, origin check on state-changing requests.
-- Login failure rate limiting.
+- `Http/Middleware/Auth.php` guarding every route except `/api/health`, `/api/auth/login`
+  and `/api/auth/me`.
+- Session cookie flags, id regeneration on login, and the self-referential origin check on
+  state-changing requests: `Origin` host vs the request's own `Host`, port stripped, absent
+  `Origin` allowed. No configured origin (D17b).
+- Login failure rate limiting against the `login_attempts` table — 5 failures per username
+  per 15 minutes, keyed on the username **as typed** so a bad username throttles the same
+  way a bad password does.
 
-**Done when:** an unauthenticated `curl` to a protected route gets a `401` JSON envelope,
-and a login/`me`/logout cycle works with a cookie jar.
+**Done when:** a write through the Vite dev proxy succeeds — if it 403s, `changeOrigin` is
+set on the proxy and must be removed; an unauthenticated `curl` to a protected route gets a
+`401` JSON envelope;
+`/api/health` still returns `200` with no cookie; a login/`me`/logout cycle works with a
+cookie jar; and six wrong passwords return `429` while a correct login on a different
+username in the same window still succeeds.
 
 ---
 
@@ -74,8 +91,11 @@ Pure PHP, no database, no HTTP. **This phase is tests-first.**
 
 - `Domain/Ruleset.php`, `Domain/Scoring.php`, `Domain/GameState.php`.
 - `tests/ScoringTest.php` and `tests/GameStateTest.php` covering **every** vector in
-  § Part 4 — P1–P22 (all three player counts), W1–W12 (wind rotation with empty chairs),
-  S1–S15, I1–I4, V1–V10. W3 is the owner's worked example and must pass exactly.
+  § Part 4 — P1–P22 (all three player counts; **P4 is retired, do not reinstate it** — the
+  case it covered is now rejection V11), W1–W12 including W4b (wind rotation with empty
+  chairs), S1–S15, I1–I4, V1–V12. W3 and W4 are the two-player cases the owner
+  confirmed and must pass exactly: at East+South the East-chair player alternates East ↔
+  North, at East+West they alternate East ↔ West.
 - The engine must be parameterised on `N` from the start. Retrofitting a player count into
   code that assumes four seats is the kind of change that leaves one `% 4` behind.
 
@@ -91,12 +111,16 @@ the one phase where "it looks right" is not acceptable — the numbers are the p
 - `PlayerRepo`, `RulesetRepo`, and their routes.
 - `Service/AvatarService.php`: `finfo` type check, GD re-encode to 256×256 WebP,
   random filename, old-file cleanup.
-- A committed `default.svg`. (Avatar execution blocking lives in the site's single
-  `.htaccess`, shipped in Phase 9 — see D20b.)
+- `frontend/public/default.svg` — a neutral mahjong tile, served at `/default.svg`. It goes
+  in `frontend/public/` so the build copies it into `dist/`; it must **not** live in
+  `avatars/`, which holds uploads only. (Avatar execution blocking lives in the site's
+  single `.htaccess`, shipped in Phase 9 — see D20b.)
+- Default player colors assigned at creation, cycling the four tile colors (D26).
 - Ruleset validation: contiguous faan rows 0..`max_faan`, bounds, delete guards.
 
 **Done when:** the full CRUD works over `curl`, an uploaded JPEG comes back as a square
-WebP, and a file renamed `evil.php.jpg` is rejected or safely re-encoded.
+WebP, a file renamed `evil.php.jpg` is rejected or safely re-encoded, and a player with no
+avatar returns `"avatar_url": "/default.svg"` that actually resolves.
 
 ---
 
@@ -112,9 +136,15 @@ The other high-risk phase. Wire the engine to the database.
 - `DELETE /api/games/{id}/hands/last`, `POST /api/games/{id}/end`, `PATCH`, `DELETE`.
 - Integration test: play a scripted 16+ hand game end to end, assert final totals sum to
   zero, assert the game auto-completes, undo the last hand, assert it reopens correctly.
+  **Run the same script at `N=3` and `N=2`**, with a non-default seat pair at `N=2`
+  (East+South), so a hardcoded `4` cannot pass.
+- `bin/verify.php` implemented: replay every game and check integrity rules 1–15, including
+  rule 14 (at most one `in_progress` game) and rule 3 (every player id named on a hand is
+  seated in that game).
 
-**Done when:** the integration test passes and `php bin/verify.php` (now implemented)
-reports no drift between stored hand state and a full replay.
+**Done when:** the integration test passes at all three player counts, a second
+`POST /api/games` while one is live returns `409`, and `php bin/verify.php` reports no
+drift between stored hand state and a full replay.
 
 ---
 
@@ -129,17 +159,24 @@ The screen everyone actually looks at. Follows the owner's sketch at
 - `styles/tokens.css` — the tile palette, dark default plus light theme.
 - `i18n/terms.ts` and the `t()` helper; language selector in the menu bar.
 - `SeatingDiamond.tsx` — inline SVG, exact coordinates in `04-frontend.md`. Winds rotate
-  with the deal; the dealer marker rides on 東.
+  with the deal; the current dealer is shown by drawing 東 heavier, with no separate 莊
+  badge (D14c). Empty chairs render dimmed, with their rotating wind and no name.
 - `Standings.tsx` (net points, descending, FLIP animation on rank change).
 - `HandHistory.tsx` beneath it, scrolling independently.
 - `EntryBar.tsx`: winner, 番, win type, 包 toggle, draw, penalty modal, undo with
   confirmation.
-- Keyboard shortcuts and the `?` overlay.
+- Keyboard shortcuts and the `?` overlay — three chair-ordered rows: `Q W E R` winner,
+  `A S D F` discarder (`G` = self-pick), `Z X C V` 包 liable player. `B` toggles 包, digits
+  pick faan. Only occupied chairs bind, and `Z X C V` are live only on a self-pick with 包 on.
+- 包 in `EntryBar.tsx` is asymmetric by win type (D7b): a bare toggle on a discard win,
+  a required picker on a self-pick. Record stays disabled until a self-pick bao names one.
 - Game-complete state with final standings.
 
 **Done when:** a real game can be scored start to finish on a 1920×1080 screen without
-touching the API directly; every score on screen matches `bin/verify.php`; and all three
-language modes render without the diamond or the faan row wrapping.
+touching the API directly; every score on screen matches `bin/verify.php`; all three
+language modes render without the diamond or the faan row wrapping; a two-player game at
+East+South shows the two empty chairs dimmed with their rotating winds; and a full discard
+hand can be entered with the keyboard alone in three keystrokes plus Enter.
 
 ---
 
@@ -153,7 +190,7 @@ language modes render without the diamond or the faan row wrapping.
   fill-by-doubling and fill-linear helpers, duplicate.
 
 **Done when:** the owner can go from an empty database to a running game entirely through
-the UI.
+the UI, including a two-player game at East+North — a seat pair no default pre-fills.
 
 ---
 
@@ -168,8 +205,9 @@ the UI.
   `Games` always visible so a thin sample is obvious (decision D13).
 - The reconciliation test: net points across any range sum to zero.
 
-**Done when:** past games are browsable and the leaderboard's numbers tie out against a
-manual `SUM(points_delta)` query.
+**Done when:** past games are browsable, the leaderboard's numbers tie out against a manual
+`SUM(points_delta)` query, and switching `player_count` visibly changes the rate columns
+while net points and games played stay reconcilable.
 
 ---
 
@@ -195,12 +233,14 @@ breaks certificate renewal months later, silently.
 - Ask the owner to paste their 8G blocklist between the markers in `deploy/remote/.htaccess`.
 - `deploy/deploy.sh` — **code only**, and it pulls avatars down as a backup first.
 - `deploy/migrate.sh` — separate and deliberate; dumps the database before migrating.
-- `deploy/backup.sh` — dump plus avatar pull, for scheduled use.
+- `deploy/backup.sh` — dump plus avatar pull with retention pruning, for scheduled use.
+  Written out in full in `05-deployment.md`.
 - Remote first-time setup, migrate, seed, create the admin user.
 - Work through the post-deploy checklist at the end of `05-deployment.md`.
 
-**Done when:** the site is live, a game has been scored on it from the TV, and a second
-deploy has been run without losing data or avatars.
+**Done when:** the whole post-deploy checklist in `05-deployment.md` passes with the
+firewall on, the site is live, a game has been scored on it from the TV, and a second
+deploy has been run without losing data, avatars, or `config/config.php`.
 
 ---
 

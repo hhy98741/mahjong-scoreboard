@@ -21,7 +21,7 @@ basePoints(ruleset, faan):
     return ruleset.points[faan]   # every faan 0..table_max_faan has a row; missing = error
 ```
 
-Clamping is against `table_max_faan` — the extent of the price list — and is purely
+Clamping is against `table_max_faan` — the extent of the points table — and is purely
 defensive. The *selectable* range is the narrower `min_faan .. max_faan` band, enforced by
 validation (V1, V1b) and by the entry picker, which only offers those values.
 
@@ -37,7 +37,7 @@ the winner nor an explicitly named payer.
 |---|---|---|
 | **A. Discard** | `win_type=discard`, `liable=null` | `D` pays `2B`; each of the `N-2` others pays `B`; `W` receives `N·B` |
 | **B. Self-pick** | `win_type=self_pick`, `liable=null` | each of the `N-1` losers pays `2B`; `W` receives `2(N-1)·B` |
-| **C. Discard + bao** | `win_type=discard`, `liable≠null` | `L` pays `N·B`; everyone else pays `0`; `W` receives `N·B` |
+| **C. Discard + bao** | `win_type=discard`, `liable≠null` — and `L` **is** `D`, always | `D` pays `N·B`; everyone else pays `0`; `W` receives `N·B` |
 | **D. Self-pick + bao** | `win_type=self_pick`, `liable≠null` | `L` pays `2(N-1)·B`; everyone else pays `0`; `W` receives `2(N-1)·B` |
 
 At `N=4` this reduces to the familiar `+4B` / `+6B`. Winner receipts by player count:
@@ -53,13 +53,27 @@ and "the lone loser pays the self-draw share" are the same 2B, so both outcomes 
 same. `win_type` is still recorded — it is real history and feeds the win-type split
 report — it just does not change the money.
 
-**Bao (包)** is the "one player pays for everybody" rule — used when a player's discard is
-judged responsible for the entire hand (the classic case: feeding the winning tile to
-someone showing nine tiles of one suit, so the discarder alone covers the flush). The
-liable player is usually the discarder, but the UI must allow naming a different player,
-because bao can be incurred on a hand that is later won by self-pick.
+**Bao (包)** is the "one player pays for everybody" rule — used when one player is judged
+responsible for the entire hand (the classic case: feeding a tile to someone showing nine
+tiles of one suit, so that player alone covers the flush). Who the liable player is depends
+entirely on the win type, and there are exactly two shapes:
 
-`liable_player_id` may equal `winner_player_id`? **No — reject that**; it is always
+| Win type | Who is liable | How it is named |
+|---|---|---|
+| **出銃 Discard** | **Always the discarder.** No other player can be liable on a discard win. | Derived — the discarder is already named on the hand. Nothing extra to pick. |
+| **自摸 Self-pick** | The player who incurred the bao earlier in the hand. There is no discarder to derive it from. | **Must be named explicitly.** Any seated player except the winner. |
+
+The discard case being fixed is the owner's call: bao on a discard where somebody *other*
+than the discarder is held responsible does not happen at this table. It is not merely
+unsupported — it is **rejected** (V11), so it cannot be recorded by mistake or by a
+malformed client. That collapses the entry UI to a single 包 toggle on discard wins.
+
+The self-pick case is real and happens periodically, which is why `liable_player_id` exists
+as a column rather than being folded into `discarder_player_id`. On a discard win it is
+still written (equal to the discarder), so "was this a bao hand?" is one non-null check
+regardless of win type, and the bao reports in `06-history-reports.md` read one column.
+
+`liable_player_id` may equal `winner_player_id`? **No — reject that** (V3); it is always
 another player.
 
 ### Draw
@@ -136,6 +150,18 @@ The deal skips empty chairs; the **wind labels do not**. An empty chair still ab
 wind each hand, which is exactly why a player's wind can jump — East to North rather than
 East to South — when the chairs between them are empty.
 
+#### Worked example — two players at East and West
+
+With the two chairs opposite each other, the two empty chairs are split one to each side,
+so both players alternate between two winds that are also opposite.
+
+| Hand | Round | Dealer chair | P1 (East chair) | P2 (West chair) |
+|---|---|---|---|---|
+| 1 | East | East | **East** | West |
+| 2 | East | West | **West** | **East** |
+| 3 | South | East | **East** | West |
+| 4 | South | West | **West** | **East** |
+
 #### Worked example — two players at East and South
 
 | Hand | Round | Dealer chair | P1 (East chair) | P2 (South chair) |
@@ -146,8 +172,10 @@ East to South — when the chairs between them are empty.
 | 4 | South | South | **North** | **East** |
 | 5 | West | East | **East** | South |
 
-P1 alternates between East and **North**, never South or West, because the two empty
-chairs sit between P2 and P1 going counterclockwise. Two deals complete a round; four
+P1 alternates between East and **North**, never South or West, because both empty chairs
+sit between P2 and P1 going counterclockwise. Compare the East+West case above: same two
+players, same rule, different winds — which is exactly why occupancy is chosen per game
+and never derived from `N`. Two deals complete a round; four
 rounds complete the game at 8 hands minimum.
 
 #### Worked example — three players at East, South, West
@@ -233,11 +261,16 @@ Points table from the seeded **Hong Kong Standard** ruleset. Faan 3 ⇒ `B = 8`.
 |---|---|---|---|---|---|
 | P1 | Ann wins by discard from Ben | **+32** | −16 | −8 | −8 |
 | P2 | Ann wins by self-pick | **+48** | −16 | −16 | −16 |
-| P3 | Ann wins by discard from Ben, bao = Ben | **+32** | −32 | 0 | 0 |
-| P4 | Ann wins by discard from Ben, bao = Cal | **+32** | 0 | −32 | 0 |
+| P3 | Ann wins by discard from Ben, bao (⇒ liable = Ben) | **+32** | −32 | 0 | 0 |
 | P5 | Ann wins by self-pick, bao = Dee | **+48** | 0 | 0 | −48 |
 | P6 | Draw | 0 | 0 | 0 | 0 |
 | P7 | Penalty, offender = Cal, 128 each | +128 | +128 | **−384** | +128 |
+
+**P4 is deliberately retired**, not renumbered. It read "Ann wins by discard from Ben,
+bao = Cal" — a discard win with a third party liable. That case no longer exists: it is now
+a rejection, covered by **V11**. The gap in the numbering is there so the vector does not
+get reintroduced by someone noticing a missing case, and so every other vector's name stays
+stable in the test suite.
 
 ### Three players — seats `0=Ann, 1=Ben, 2=Cal`
 
@@ -245,7 +278,7 @@ Points table from the seeded **Hong Kong Standard** ruleset. Faan 3 ⇒ `B = 8`.
 |---|---|---|---|---|
 | P13 | Ann wins by discard from Ben | **+24** | −16 | −8 |
 | P14 | Ann wins by self-pick | **+32** | −16 | −16 |
-| P15 | Ann wins by discard from Ben, bao = Cal | **+24** | 0 | −24 |
+| P15 | Ann wins by discard from Ben, bao (⇒ liable = Ben) | **+24** | −24 | 0 |
 | P16 | Ann wins by self-pick, bao = Ben | **+32** | −32 | 0 |
 | P17 | Penalty, offender = Cal, 128 each | +128 | +128 | **−256** |
 
@@ -255,7 +288,7 @@ Points table from the seeded **Hong Kong Standard** ruleset. Faan 3 ⇒ `B = 8`.
 |---|---|---|---|
 | P18 | Ann wins by discard from Ben | **+16** | −16 |
 | P19 | Ann wins by self-pick | **+16** | −16 |
-| P20 | P18 and P19 produce identical deltas | assert equal — this is D23, not a bug |
+| P20 | Assert P18 ≡ P19 — at `N=2` discard and self-pick pay the same (D23, not a bug) | **+16** | −16 |
 | P21 | Ann wins by self-pick, bao = Ben | **+16** | −16 |
 | P22 | Penalty, offender = Ben, 128 each | +128 | **−128** |
 
@@ -279,7 +312,8 @@ chair deals next, never the arithmetic.
 | W1 | E,S,W,N | West | E chair→West, S→North, W→East, N→South |
 | W2 | E,S | East | E chair→East, S chair→South |
 | W3 | E,S | South | E chair→**North**, S chair→East — the owner's worked example |
-| W4 | E,W | West | E chair→**South**, W chair→East |
+| W4 | E,W | West | E chair→**West**, W chair→East — with the chairs opposite, these two alternate East ↔ West |
+| W4b | E,W | East | E chair→East, W chair→West — the other half of that alternation |
 | W5 | E,N | North | E chair→**South**, N chair→East |
 | W6 | E,S,W | South | E→North, S→East, W→South |
 | W7 | E,S,W | West | E→West, S→North, W→East — all four winds seen across one round |
@@ -334,3 +368,5 @@ Starting at `round=East, dealer chair=East, hand=1`:
 | V8 | deleting a hand that is not the last | rule 10 |
 | V9 | `player_count` outside 2–4, or `seats` length ≠ `player_count` | rule 1 |
 | V10 | `win_type='discard'` at `N=2` where the discarder is not the only opponent | referential |
+| V11 | `win_type='discard'` with `liable_player_id` set to anyone but `discarder_player_id` | On a discard win the discarder is the only player who can be liable. Retired vector P4. |
+| V12 | `win_type='self_pick'` with bao intended but no `liable_player_id` | There is no discarder to derive it from, so it must be named |

@@ -39,6 +39,12 @@ The public URL appears in `deploy.conf` only, and only so `deploy.sh` can smoke-
 site after deploying. The application itself never sees it: all frontend URLs are relative
 and the CSRF check compares `Origin` against the request's own `Host`, per D17.
 
+`SITE` is **deploy-time only**. `deploy.conf` is bash, sourced by `deploy.sh` on your
+laptop; nothing on the server reads it, and `config/config.php` deliberately has no origin
+key. Feeding `SITE` into the CSRF check would mean maintaining the domain in a second place
+that fails closed — a stale value 403s every write with an error that looks like an
+application bug rather than a config one. D17b records that this was reconsidered and kept.
+
 ---
 
 ## What actually gets compiled, and what does not
@@ -254,8 +260,8 @@ checklist with the firewall **on**.
   sites/<site-name>/                       <- $DOCROOT
     index.html                             built SPA shell
     assets/                                built JS/CSS, content-hashed
-    default.svg
-    avatars/                               uploads - WRITABLE 755
+    default.svg                            shipped from frontend/public/, via dist/
+    avatars/                               uploads ONLY - WRITABLE 755, never deployed into
     api/
       index.php                            front controller stub
     .htaccess                              shipped from deploy/remote/.htaccess
@@ -371,10 +377,16 @@ bun install --frozen-lockfile
 bun run build                      # -> dist/
 
 echo "-> syncing PHP application"
-rsync -avz --delete \
-  --exclude 'config/config.php' --exclude '.DS_Store' \
-  app bin migrations config/config.example.php \
+rsync -avz --delete --exclude '.DS_Store' \
+  app bin migrations \
   "$REMOTE:$APPDIR/"
+
+# config/ is synced separately: no --delete, and config.php excluded, so the
+# server's credentials survive. Folded into the command above, the exclude would
+# have been a no-op (config/ was not in the source list) and the example file
+# would have landed at $APPDIR/config.example.php instead of $APPDIR/config/.
+rsync -avz --exclude 'config.php' --exclude '.DS_Store' \
+  config/ "$REMOTE:$APPDIR/config/"
 
 echo "-> syncing hashed assets (safe to prune)"
 rsync -avz --delete dist/assets/ "$REMOTE:$DOCROOT/assets/"
@@ -433,6 +445,40 @@ ssh "$REMOTE" "cd $APPDIR && php bin/migrate.php"
 `mysqldump --single-transaction`, so the password lives in one place on the server and
 never reaches a local file, a shell history, or a process list.
 
+## `deploy/backup.sh` — dump plus avatar pull
+
+Everything the server holds that is not in git: the database, and the uploaded avatars.
+Safe to run at any time, and safe to run from cron. It never writes to the server.
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+source deploy/deploy.conf
+STAMP=$(date +%Y%m%d-%H%M%S)
+KEEP=${BACKUP_KEEP:-30}
+
+mkdir -p backups/avatars
+
+echo "-> dumping database to backups/db-$STAMP.sql.gz"
+ssh "$REMOTE" "cd $APPDIR && php bin/dbdump.php" | gzip > "backups/db-$STAMP.sql.gz"
+# A dump that fails halfway still leaves a valid gzip file, so check it is not a stub.
+[[ $(stat -f%z "backups/db-$STAMP.sql.gz" 2>/dev/null || stat -c%s "backups/db-$STAMP.sql.gz") -gt 1024 ]] \
+  || { echo "!! dump looks truncated"; exit 1; }
+
+echo "-> pulling avatars"
+rsync -avz "$REMOTE:$DOCROOT/avatars/" backups/avatars/
+
+echo "-> pruning dumps older than the newest $KEEP"
+ls -1t backups/db-*.sql.gz | tail -n "+$((KEEP + 1))" | xargs -r rm --
+
+echo "backup complete: backups/db-$STAMP.sql.gz"
+```
+
+`backups/` is gitignored. The avatar pull is a plain mirror with **no `--delete`**, so a
+file removed on the server stays in the local backup — which is the point. `deploy.sh` runs
+the same avatar pull before every deploy; this script is what you schedule.
+
 ---
 
 ## First-time setup, in order
@@ -456,27 +502,57 @@ ssh "$REMOTE" "mkdir -p $APPDIR/config $DOCROOT/avatars && chmod 755 $DOCROOT/av
 ## Local development
 
 ```bash
-bun run serve:api    # php -S localhost:8080 -t public_html
+bun run serve:api    # php -S localhost:8080 -t public_html public_html/router.php
 bun run dev          # vite on :5173, proxying /api and /avatars to :8080
 ```
 
-A local `config/config.php` points at a local MariaDB. `bin/migrate.php` and
-`bin/seed.php` work identically locally — never maintain two schemas.
+`php -S` serves paths literally and ignores `.htaccess`, so `/api/health` would 404 without
+`public_html/router.php` — the four-line dev-only router in `03-api.md` § Layout. It is
+never deployed; production routing is the one `.htaccess`.
+
+`/default.svg` needs no special handling in either place: Vite serves `frontend/public/` at
+the root in dev, and the build copies it into `dist/`.
+
+A local `config/config.php` points at a local MariaDB. `bin/migrate.php` and `bin/seed.php`
+work identically locally — never maintain two schemas. `bin/seed.php` is idempotent, so
+running it twice is not an error.
 
 ## Post-deploy checklist
 
 Run this with the 8G firewall **enabled**.
 
+**Reachability**
 - [ ] Plain HTTP redirects to HTTPS.
 - [ ] Typing the bare domain loads the login screen.
 - [ ] `/api/health` returns JSON, not HTML and not a `403` from the firewall.
+- [ ] `/api/health` returns **200 without a session** — it is exempt from the auth
+      middleware. If it 401s, every future deploy rolls itself back.
+- [ ] A deep link pasted cold (`$SITE/#/history`) loads — hash routing needs no rewrite.
+
+**Auth**
 - [ ] Login succeeds and the session survives a page reload.
+- [ ] An unauthenticated request to `/api/players` returns a 401 JSON envelope.
+- [ ] Six bad passwords in a row return `429`, and a correct password on a *different*
+      username still works — confirms throttling is per username, not global.
+
+**The firewall does not eat the app**
 - [ ] Recording a hand returns JSON — confirms the firewall does not block `POST /api/*`.
 - [ ] A stats call with query parameters (`/api/stats/leaderboard?from=2026-01-01`)
       returns JSON — confirms the firewall does not object to the query string.
+
+**Nothing was destroyed**
 - [ ] **`.well-known/` and `cgi-bin/` still exist after a deploy.**
+- [ ] An uploaded avatar survives a second deploy.
+- [ ] `$APPDIR/config/config.php` still holds the real credentials after a deploy, and
+      `$APPDIR/config/config.example.php` sits beside it — not one directory up.
+- [ ] `backups/db-*.sql.gz` from `./deploy/backup.sh` gunzips to real SQL.
+
+**Assets**
+- [ ] `/default.svg` returns the SVG — a player with no avatar shows a tile, not a broken
+      image.
+- [ ] `$SITE/avatars/test.php` returns 403.
+- [ ] A second deploy actually changes the page — `index.html` is not being cached.
+
+**Rollback**
 - [ ] A deliberately broken `.htaccess` triggers the rollback and leaves the site up.
       Worth testing once, on purpose, before you rely on it.
-- [ ] `$SITE/avatars/test.php` returns 403.
-- [ ] An uploaded avatar survives a second deploy.
-- [ ] An unauthenticated request to `/api/players` returns a 401 JSON envelope.

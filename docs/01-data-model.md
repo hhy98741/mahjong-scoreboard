@@ -26,6 +26,16 @@ CREATE TABLE users (
   UNIQUE KEY uq_users_username (username)
 ) ENGINE=InnoDB;
 
+-- Login throttling state (03-api.md: 5 failures per username per 15 minutes).
+-- Cannot live in the session - the attacker controls their own. Rows are keyed by
+-- username as TYPED, so attempts against a non-existent account are throttled too and
+-- the endpoint cannot be used to enumerate valid usernames.
+CREATE TABLE login_attempts (
+  username       VARCHAR(64) NOT NULL,
+  attempted_at   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_la_username_time (username, attempted_at)
+) ENGINE=InnoDB;
+
 -- ---------------------------------------------------------------- people
 
 -- A "player" is a person who sits at the table. Deliberately separate from `users`:
@@ -34,7 +44,10 @@ CREATE TABLE players (
   id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name         VARCHAR(80)  NOT NULL,
   avatar_path  VARCHAR(255) NULL,          -- e.g. 'avatars/7-a1b2c3.webp'; NULL = default
-  colour       CHAR(7)      NOT NULL DEFAULT '#6b7280',  -- accent used on the scoreboard
+  color        CHAR(7)      NOT NULL DEFAULT '#6b7280',  -- '#rrggbb' accent on the scoreboard.
+                                                        -- PlayerRepo always assigns one from
+                                                        -- the tile cycle (D26); this neutral
+                                                        -- grey is only a direct-insert fallback.
   is_active    TINYINT(1)   NOT NULL DEFAULT 1,
   created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_players_name (name)
@@ -118,12 +131,16 @@ CREATE TABLE hands (
   faan                TINYINT UNSIGNED NULL,
   win_type            ENUM('discard','self_pick') NULL,
   discarder_player_id INT UNSIGNED NULL,            -- required when win_type='discard'
-  liable_player_id    INT UNSIGNED NULL,            -- bao: this player pays everything
+  liable_player_id    INT UNSIGNED NULL,            -- bao: this player pays everything.
+                                                  -- On a discard win this ALWAYS equals
+                                                  -- discarder_player_id (rule 16); on a
+                                                  -- self-pick win it is named explicitly.
+                                                  -- NULL = not a bao hand, either way.
   base_points         INT UNSIGNED NULL,            -- resolved from the snapshot table
 
   -- outcome = 'penalty'
   offender_player_id  INT UNSIGNED NULL,
-  penalty_per_player  INT UNSIGNED NULL,            -- each of the other three receives this
+  penalty_per_player  INT UNSIGNED NULL,            -- each of the other N-1 players receives this
 
   note                VARCHAR(255) NULL,
   created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -169,7 +186,13 @@ with `json_encode`/`json_decode`, do not rely on JSON path functions.
 
 ## Seed data
 
-`migrations/002_seed.sql` (or a `bin/seed.php`) inserts one ruleset:
+Seed data lives in **`bin/seed.php` only** — never in a migration. `migrations/` is replayed
+in order on every server and must describe schema, not content the owner is expected to
+edit; a seed baked into a migration would either fight their edits or fail on re-run.
+`bin/seed.php` is idempotent: it inserts the default ruleset only if no ruleset with that
+name exists, and leaves an existing one untouched.
+
+It inserts one ruleset:
 
 **"Hong Kong Standard"** — `table_max_faan = 13`, `penalty_default = 128`,
 `is_default = 1`, with the banded doubling table transcribed from the reference PDF p.10:
@@ -190,7 +213,7 @@ anywhere outside the seed.
 | `table_max_faan` | **ruleset** | How far does the points table go? | `13` — points defined for faan 0–13 |
 | `min_faan` / `max_faan` | **game** | What can be picked when recording a hand? | `2` and `8` — the entry bar offers 2,3,4,5,6,7,8 and nothing else |
 
-The table is the full price list, belongs to the ruleset, and rarely changes. The band is a
+The points table belongs to the ruleset and rarely changes. The band is a
 per-game decision made on the New Game screen (defaults 2 and 8), because it is the kind of
 thing that varies night to night. Narrowing it deletes nothing — faan 0, 1 and 9–13 keep
 their defined point values, they just cannot be selected in that game.
@@ -214,6 +237,7 @@ These are not all expressible as FK constraints; enforce them in PHP and cover w
 5. `outcome='win'` ⇒ `winner_player_id`, `faan`, `win_type`, `base_points` all non-null;
    `win_type='discard'` ⇒ `discarder_player_id` non-null; `win_type='self_pick'` ⇒
    `discarder_player_id` is null.
+5b. `liable_player_id != winner_player_id` when set.
 6. `outcome='draw'` ⇒ every win/penalty column is null and there are still
    `player_count` `hand_scores` rows, all with `points_delta = 0`.
 7. `outcome='penalty'` ⇒ `offender_player_id` and `penalty_per_player` non-null.
@@ -224,3 +248,20 @@ These are not all expressible as FK constraints; enforce them in PHP and cover w
 11. `ruleset_points` has exactly one row for every faan from 0 to `table_max_faan`, no gaps.
 12. `0 <= games.min_faan <= games.max_faan <= ruleset_snapshot.table_max_faan`.
 13. Every hand writes exactly `player_count` `hand_scores` rows summing to zero.
+14. **At most one game may have `status = 'in_progress'` at a time.** Enforced in PHP at
+   `POST /api/games` (409 otherwise), not by a constraint — MySQL has no partial unique
+   index. `bin/verify.php` checks it.
+15. `players.color` is a seven-character `#rrggbb` string, lower- or upper-case hex.
+16. **`win_type='discard'` with `liable_player_id` set ⇒ `liable_player_id =
+   discarder_player_id`.** On a discard win the discarder is the only player who can be
+   liable; anything else is rejected, not stored (V11). A self-pick bao names its liable
+   player freely — any seated player except the winner.
+
+### Deliberate non-constraints
+
+`hands.winner_player_id`, `discarder_player_id`, `liable_player_id`, `offender_player_id`
+and `hand_scores.player_id` carry **no** foreign key to `players`. That is intentional:
+players are only ever soft-deleted (`is_active = 0`), `game_seats` already holds the
+`ON DELETE RESTRICT` that makes a hard delete impossible, and rule 3 above — enforced in
+PHP and covered by `bin/verify.php` — is the real guarantee. Adding four more FKs to a
+table written once per hand buys nothing.

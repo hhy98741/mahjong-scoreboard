@@ -23,7 +23,13 @@ Specs live in `docs/`. Build order and the definition of done for each step is i
 ## Non-negotiable conventions
 
 - **Spelling: `faan`, never `fan`.** Cantonese romanisation, used in code identifiers,
-  DB columns, API fields, and UI copy. `faan`, `min_faan`, `max_faan`, `points_per_faan`.
+  DB columns, API fields, and UI copy. `faan`, `min_faan`, `max_faan`, `table_max_faan`.
+- **Spelling: `color`, never `colour`.** `players.color`, the API field, the CSS custom
+  properties, and prose. See decision D27.
+- **Nothing is hardcoded to four players.** `N` is `games.player_count` (2, 3 or 4) and the
+  occupied chairs are chosen per game. Winds are always `% 4`; only the deal skips empty
+  chairs. A stray `% 4` where `N` belongs — or `N` where `4` belongs — is the most likely
+  bug in this codebase. See D23, D23b, D23c, D24.
 - **Hands are an append-only log.** Player scores and round/dealer state are *always*
   derived by replaying `hands` in order. Never mutate a hand in place; undo deletes the
   last hand and recomputes.
@@ -38,6 +44,10 @@ Specs live in `docs/`. Build order and the definition of done for each step is i
   server paths, and credentials belong in `config/config.php` and `deploy/deploy.conf`,
   both gitignored. The committed `.example` counterparts carry placeholders only. Docs
   refer to `$DOCROOT`, `$APPDIR`, `$SITE`, `$REMOTE` or `example.com`, never real values.
+- **One `.htaccess`, at the document root**, version-controlled at `deploy/remote/.htaccess`.
+  Never add one in a subdirectory — mod_rewrite rules are not inherited, so it would bypass
+  the firewall and the HTTPS redirect. See D20.
+- **Seed data lives in `bin/seed.php`, never in a migration.** `migrations/` is schema only.
 
 ## Stack
 
@@ -56,7 +66,7 @@ Specs live in `docs/`. Build order and the definition of done for each step is i
 bun install            # install frontend deps
 bun run dev            # Vite dev server (proxies /api to the local PHP server)
 bun run build          # production build into dist/
-bun run serve:api      # php -S localhost:8080 -t public_html (local API)
+bun run serve:api      # php -S localhost:8080 -t public_html public_html/router.php
 composer test          # PHPUnit — scoring engine tests must stay green
 ./deploy/deploy.sh     # rsync build + PHP app to shared hosting
 ```

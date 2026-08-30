@@ -32,13 +32,14 @@ is naturally ~1/N. So:
 ## Tier 1 — build with the history page
 
 ### 1. Game list
-The landing view of `#/history`. One card per game, newest first: date, optional name,
-the four avatars, final scores in rank order, winner highlighted, hand count, duration.
-Filter by player and by date range. Click through to game detail.
+The landing view of `#/history`. One card per game, newest first: date, optional name, the
+seated players' avatars (two, three or four of them), final scores in rank order, winner
+highlighted, hand count, duration. Filter by player, by date range, and by player count.
+Click through to game detail.
 
 ### 2. Game detail
 The full hand-by-hand log for one game (the same `HandRow` component the scoreboard uses),
-plus a **score curve**: four lines of cumulative points across hands, x-axis = hand number,
+plus a **score curve**: one line per seated player of cumulative points across hands, x-axis = hand number,
 with round boundaries marked as vertical rules. Reading a comeback on that chart is the
 single most satisfying thing in this app.
 
@@ -96,7 +97,7 @@ Everything from the leaderboard row for one person, plus:
 
 ### 5. Money-flow matrix
 An N×N grid: net points transferred from the row player to the column player,
-across all hands. Colour the cells diverging red/green.
+across all hands. Color the cells diverging red/green.
 
 This answers the question everyone at the table actually asks — *"who keeps paying me?"* —
 and it reveals real patterns: who feeds whom, who never deals into whose hands.
@@ -129,7 +130,10 @@ stats, and nobody tracks this on paper.
 
 ### 9. Win-type split
 Self-pick vs discard, as a share of each player's wins, plus a table-wide draw rate. Also
-count 包 (bao) incidents — who causes them, who benefits.
+count 包 (bao) incidents — who causes them, who benefits. Break them out by win type: a
+discard bao is always the discarder's doing, while a self-pick bao names someone who was
+already on the hook before the hand ended, so blending the two hides the more interesting
+number.
 
 ---
 
@@ -160,8 +164,9 @@ spreadsheet. Cheap to build, worth doing.
   in `01-data-model.md` already carries `hand_scores(player_id)` and
   `games(status, started_at)`, which covers these queries at this data volume — a decade
   of weekly play is on the order of 20k `hand_scores` rows.
-- Reports read **only** completed and in-progress games; exclude `abandoned` from
-  leaderboards by default, with a toggle to include them.
+- Reports read **only** completed and in-progress games; `abandoned` games are excluded by
+  default and included with `?include_abandoned=1` (`03-api.md` § Stats), which is what the
+  UI toggle sends.
 - Every aggregate that involves points must reconcile: the sum of all players' net points
   over any range is exactly `0`. Add that as a test with seeded data — it catches
   attribution bugs in the flow matrix immediately.

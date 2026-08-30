@@ -51,7 +51,6 @@ export const TERMS = {
 
   // roles
   dealer:       { en: 'Dealer',         zh: '莊家', jyutping: 'zong1 gaa1' },
-  dealerMark:   { en: 'D',              zh: '莊',   jyutping: 'zong1' },
   openingDealer:{ en: 'Opening dealer', zh: '開莊', jyutping: 'hoi1 zong1' },
   player:       { en: 'Player',         zh: '玩家', jyutping: 'wun6 gaa1' },
 
@@ -110,6 +109,11 @@ Three modes, selected from the menu bar:
 | `both` | `南圈 South Round` | `南 S` | `自摸 self-pick` |
 
 The opening-dealer marker shows 開莊 in `zh` and `both`, and "Opening dealer" in `en`.
+
+There is deliberately **no `dealerMark` term.** The current dealer is marked by drawing 東
+heavier than the other winds, not by a 莊 badge — East *is* the dealer, so a badge would be
+a second glyph for a fact the wind already states (`04-frontend.md` § Markers). `dealer`
+(莊家) survives for prose like the round label's dealer name.
 
 Default is `both`. Numbers stay Arabic everywhere — `5 番`, not `五番`. That is how scores
 are written at a real table and it keeps the digits scannable from across the room.

@@ -18,13 +18,13 @@ range, so an out-of-range score cannot be recorded.
 - **Live scoreboard** — a seating diamond showing each player's current wind, standings by
   net points, a scrolling hand history, and a one-line entry bar. Designed for a 1920×1080
   TV, readable across a room.
-- **Automatic round tracking** — the dealer keeps the deal on a win or a washout and
-  otherwise rotates counterclockwise. Four rounds make a game whatever the player count, so
-  16 hands at four players, 12 at three, 8 at two. No buttons to press; it is derived from
-  who won.
+- **Automatic round tracking** — the dealer keeps the deal when the dealer wins, on a
+  washout, or on a penalty, and otherwise the deal rotates counterclockwise, skipping empty
+  chairs. Four rounds make a game whatever the player count, so 16 hands at four players,
+  12 at three, 8 at two. No buttons to press; it is derived from who won.
 - **2, 3 or 4 players** — chosen per game, along with **which seats** they take. East is
   always the opening dealer; everyone else can sit at any of South, West or North.
-- **Hong Kong scoring** — a fully editable 番 → points table on the ruleset, plus a
+- **Hong Kong scoring** — a fully editable 番 → base points table on the ruleset, plus a
   per-game selectable range (the table may run 0–13 while a given game allows only 2–8),
   with standard HK payments
   (discarder pays double; self-pick pays all), 包 liability, 黃莊 draws, and penalties.
@@ -49,7 +49,7 @@ one-command rsync deploy.
 ```bash
 bun install            # install frontend deps
 bun run dev            # Vite dev server, proxies /api to the local PHP server
-bun run serve:api      # php -S localhost:8080 -t public_html
+bun run serve:api      # php -S localhost:8080 -t public_html public_html/router.php
 bun run build          # production build into dist/
 composer test          # PHPUnit - the scoring engine tests must stay green
 
@@ -63,11 +63,12 @@ composer test          # PHPUnit - the scoring engine tests must stay green
 ```
 app/            PHP source: Http/, Domain/, Repo/, Service/
 bin/            migrate, seed, create-user, verify, dbdump
-migrations/     NNN_description.sql, applied in filename order
+migrations/     NNN_description.sql, schema only - seed data lives in bin/seed.php
 config/         config.example.php (committed); config.php (never)
 frontend/src/   TypeScript SPA
-public_html/    local docroot - api/index.php, avatars/
-deploy/         deploy.sh, migrate.sh, backup.sh, remote/
+frontend/public/ static assets copied verbatim into dist/, e.g. default.svg
+public_html/    local docroot only - api/index.php, router.php, avatars/
+deploy/         deploy.sh, migrate.sh, backup.sh, remote/ (the one .htaccess)
 docs/           the specs - start with PLAN.md
 docs/reference/ source material: the HK rules PDF, the layout sketch
 scratchpad/     local working notes (gitignored)
@@ -84,7 +85,7 @@ build, and a "done when" test.
 | [`01-data-model.md`](docs/01-data-model.md) | MariaDB schema and integrity rules |
 | [`02-scoring-engine.md`](docs/02-scoring-engine.md) | Payment math, round state machine, test vectors |
 | [`03-api.md`](docs/03-api.md) | JSON API contract |
-| [`04-frontend.md`](docs/04-frontend.md) | Screens, scoreboard layout, colour scheme |
+| [`04-frontend.md`](docs/04-frontend.md) | Screens, scoreboard layout, color scheme |
 | [`05-deployment.md`](docs/05-deployment.md) | Server details, `.htaccess`, rsync scripts |
 | [`06-history-reports.md`](docs/06-history-reports.md) | Reporting features |
 | [`07-terminology.md`](docs/07-terminology.md) | Bilingual term list |
@@ -94,6 +95,7 @@ build, and a "done when" test.
 ## Conventions worth knowing up front
 
 - **It is spelled `faan`, never `fan`** — in code, columns, API fields, and UI copy.
+- **It is spelled `color`, never `colour`** — column, API field, CSS, and prose.
 - **Hands are append-only.** Scores and round state are always derived by replaying them;
   undo deletes the last hand and recomputes.
 - **Rulesets are snapshotted onto a game.** Editing a ruleset never rewrites history.
@@ -108,7 +110,7 @@ Local development needs PHP 8.1+, MariaDB or MySQL, and Bun.
 ```bash
 cp config/config.example.php config/config.php   # point at a local database
 php bin/migrate.php && php bin/seed.php
-php bin/create-user.php --username=you --admin
+php bin/create-user.php --username=you --display-name="You" --admin
 bun install && bun run dev
 ```
 
