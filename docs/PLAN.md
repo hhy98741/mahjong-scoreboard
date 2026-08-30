@@ -7,18 +7,28 @@ Before starting any phase, read the specs it lists. Before finishing any phase, 
 its "Done when" list yourself; do not report a phase complete on the strength of the code
 looking right.
 
+[`PHASE-PROMPT.md`](PHASE-PROMPT.md) holds a ready-to-paste prompt for each phase, one per
+build session, plus the two places it splits a phase in this file across two sessions
+(Phase 6, and Phase 5 if it runs long). This document stays the authority on *what* each
+phase contains; that one is only how the sessions get started.
+
 ---
 
 ## Phase 0 — Scaffold
 
-**Read:** `CLAUDE.md`, `docs/03-api.md` § Layout, `docs/05-deployment.md` § Local development
+**Read:** `CLAUDE.md`, `docs/03-api.md` § Layout, `docs/04-frontend.md` § Setup,
+`docs/05-deployment.md` §§ Local development, Remote layout
 
 Repo skeleton, tooling, and a request that reaches PHP and comes back as JSON.
 
 - `git init` and `.gitignore` are **already done** — the repo exists and the ignore file is
   committed. Start at `package.json`.
-- `package.json` with the Bun scripts from `CLAUDE.md`; `composer.json` with PHPUnit as
-  the only (dev) dependency.
+- **One `package.json`, at the repo root** (D28), with the Bun scripts from `CLAUDE.md`.
+  Do not run `bun create vite frontend` — it makes a second manifest and lockfile inside
+  `frontend/`, and then the root `bun install --frozen-lockfile` in `deploy.sh` installs
+  nothing. See `04-frontend.md` § Setup for the exact commands and the `outDir` trap.
+- `composer.json` with PHPUnit as the only (dev) dependency, and a `test` script so
+  `composer test` works as documented.
 - `app/bootstrap.php`: autoloader, config load, JSON error handler that never leaks
   internals.
 - `Http/Router.php`, `Request.php`, `Response.php`. One route: `GET /api/health` →
@@ -27,6 +37,18 @@ Repo skeleton, tooling, and a request that reaches PHP and comes back as JSON.
 - `public_html/router.php` — the four-line dev-server router from `03-api.md` § Layout.
   Without it `php -S` serves paths literally and `/api/health` 404s. There is **no**
   `.htaccess` under `public_html/`.
+- **The front controller, written once and kept in two identical copies.** Write it at
+  `deploy/remote/api/index.php` (the version in `05-deployment.md`) and copy it verbatim to
+  `public_html/api/index.php`. The same bytes are correct in both places: its production
+  candidate path resolves under `~/apps/<name>/`, and when that misses — which it does in a
+  local checkout — it falls through to `__DIR__/../../app/bootstrap.php`, which from
+  `public_html/api/` is the repo's own `app/bootstrap.php`. Phase 9 then ships the
+  `deploy/remote/` copy unchanged.
+
+  **Do not substitute a symlink.** PHP resolves `__DIR__` through symlinks to the real
+  path, so a link at `public_html/api/index.php` would report `deploy/remote/api` as its
+  directory and look for `deploy/app/bootstrap.php`, which does not exist. Copy the file,
+  and if the two ever drift, `deploy/remote/` is the source of truth.
 - `Repo/Db.php`: PDO factory, `ERRMODE_EXCEPTION`, `ATTR_EMULATE_PREPARES => false`,
   `utf8mb4`.
 - `config/config.example.php` committed; a real local `config/config.php` created.
@@ -35,7 +57,9 @@ Repo skeleton, tooling, and a request that reaches PHP and comes back as JSON.
 
 **Done when:** `bun run dev` and `bun run serve:api` are both running and the browser
 shows the health payload fetched from PHP. Also verify `curl -s localhost:8080/api/health`
-returns the JSON directly — that proves `router.php` works, not just the Vite proxy.
+returns the JSON directly — that proves `router.php` works, not just the Vite proxy. And
+check that `bun run build` writes to the repo's own `dist/` and not to its parent
+directory — the `outDir` mistake in `04-frontend.md` § Setup looks like a clean build.
 
 ---
 
@@ -52,10 +76,17 @@ returns the JSON directly — that proves `router.php` works, not just the Vite 
   it inserts only if no ruleset of that name exists and never overwrites the owner's edits.
 - `bin/verify.php` — stub for now; it will grow the consistency checks from
   `docs/02-scoring-engine.md` § Replay.
+- `bin/dbdump.php` — reads credentials from `config/config.php` and execs
+  `mysqldump --single-transaction`, streaming SQL to stdout. Built here, with the rest of
+  `bin/`, rather than in Phase 9: both `deploy/migrate.sh` and `deploy/backup.sh` depend on
+  it, and the first time you want it is the moment before your first production migration,
+  which is the worst moment to discover it does not exist. Keeping the password inside this
+  script is the point — it never reaches a local file, a shell history, or a process list.
 
 **Done when:** a dropped database can be rebuilt from scratch with
-`php bin/migrate.php && php bin/seed.php`, twice in a row, with no errors — and the second
-`seed.php` leaves a hand-edited `base_points` value untouched.
+`php bin/migrate.php && php bin/seed.php`, twice in a row, with no errors — the second
+`seed.php` leaves a hand-edited `base_points` value untouched — and
+`php bin/dbdump.php | head` emits real SQL against the local database.
 
 ---
 
@@ -93,7 +124,8 @@ Pure PHP, no database, no HTTP. **This phase is tests-first.**
 - `tests/ScoringTest.php` and `tests/GameStateTest.php` covering **every** vector in
   § Part 4 — P1–P22 (all three player counts; **P4 is retired, do not reinstate it** — the
   case it covered is now rejection V11), W1–W12 including W4b (wind rotation with empty
-  chairs), S1–S15, I1–I4, V1–V12. W3 and W4 are the two-player cases the owner
+  chairs), S1–S15 (**S5 is likewise retired** — S6 asserts the same round boundary directly
+  and generalises across `N`), I1–I4, V1–V12. W3 and W4 are the two-player cases the owner
   confirmed and must pass exactly: at East+South the East-chair player alternates East ↔
   North, at East+West they alternate East ↔ West.
 - The engine must be parameterised on `N` from the start. Retrofitting a player count into
@@ -156,6 +188,8 @@ The screen everyone actually looks at. Follows the owner's sketch at
 `docs/reference/scoreboard-dashboard.jpg`.
 
 - Router, `api.ts`, `store.ts`, `types.ts`, login screen, session bootstrap.
+- `Home.tsx` — the landing screen, spec'd in `04-frontend.md` § Home. Small, but it is the
+  first thing anyone sees after logging in and every other screen is reached through it.
 - `styles/tokens.css` — the tile palette, dark default plus light theme.
 - `i18n/terms.ts` and the `t()` helper; language selector in the menu bar.
 - `SeatingDiamond.tsx` — inline SVG, exact coordinates in `04-frontend.md`. Winds rotate
@@ -227,7 +261,11 @@ directory already contains `.well-known/` (AutoSSL) and `cgi-bin/`; deleting the
 breaks certificate renewal months later, silently.
 
 - `deploy/remote/` — exactly two files: `.htaccess` and `api/index.php`. No subdirectory
-  `.htaccess` files (mod_rewrite rules are not inherited; see D20).
+  `.htaccess` files (mod_rewrite rules are not inherited; see D20). Both files are written
+  out in full in `05-deployment.md`; only the 8G blocklist is left to paste in.
+- **`deploy/remote/api/index.php` and `public_html/api/index.php` are the same file**, and
+  were written in Phase 0 — see the note there. Nothing new to write here; the deploy just
+  ships it.
 - `deploy/deploy.sh` must back up the live `.htaccess`, smoke-test `/` and `/api/health`
   after syncing, and roll the file back on failure. Test that rollback deliberately.
 - Ask the owner to paste their 8G blocklist between the markers in `deploy/remote/.htaccess`.
@@ -248,7 +286,7 @@ deploy has been run without losing data, avatars, or `config/config.php`.
 
 **Read:** `docs/06-history-reports.md` Tier 2
 
-Money-flow matrix, seat luck, streaks and records, feeder stats, win-type split. Pure
+Points flow matrix, seat luck, streaks and records, feeder stats, win-type split. Pure
 addition; nothing else depends on it. Pick them off in any order once the app has enough
 real games in it to be interesting.
 

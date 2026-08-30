@@ -61,14 +61,15 @@ composer test          # PHPUnit - the scoring engine tests must stay green
 ## Layout
 
 ```
+package.json    the ONE manifest - Bun scripts for both halves of the project
 app/            PHP source: Http/, Domain/, Repo/, Service/
 bin/            migrate, seed, create-user, verify, dbdump
 migrations/     NNN_description.sql, schema only - seed data lives in bin/seed.php
 config/         config.example.php (committed); config.php (never)
-frontend/src/   TypeScript SPA
+frontend/src/   TypeScript SPA (source only - no package.json of its own)
 frontend/public/ static assets copied verbatim into dist/, e.g. default.svg
 public_html/    local docroot only - api/index.php, router.php, avatars/
-deploy/         deploy.sh, migrate.sh, backup.sh, remote/ (the one .htaccess)
+deploy/         deploy.sh, migrate.sh, backup.sh, remote/ (the one .htaccess + api stub)
 docs/           the specs - start with PLAN.md
 docs/reference/ source material: the HK rules PDF, the layout sketch
 scratchpad/     local working notes (gitignored)

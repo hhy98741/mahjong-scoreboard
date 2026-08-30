@@ -239,6 +239,27 @@ RewriteRule ^api/.*$ /api/index.php [QSA,L]
 `index.html` must not be cached, or a deploy will not take effect until the browser gives
 up its copy. Content-hashed asset filenames are what make the year-long cache safe.
 
+### PHP upload limits vs. the 8 MB avatar cap
+
+`AvatarService` accepts files up to 8 MB (`03-api.md` § Players), but PHP enforces its own
+limits first and **cPanel shared hosting commonly ships `upload_max_filesize = 2M`**. When
+PHP rejects an upload at that layer the file never reaches the application: `$_FILES` comes
+back with `UPLOAD_ERR_INI_SIZE` (or empty, if `post_max_size` was the binding limit), which
+looks from the browser like the upload silently did nothing.
+
+Check the live values rather than assuming — modern phone photos clear 2 MB easily:
+
+```bash
+ssh "$REMOTE" 'php -r "echo ini_get(\"upload_max_filesize\"), \" \", ini_get(\"post_max_size\"), PHP_EOL;"'
+```
+
+If they are below 8 MB, either raise them in cPanel's MultiPHP INI Editor (`upload_max_filesize`
+and `post_max_size`, the latter at least as large) or lower the app's cap to match. **Do not
+leave the two out of step in the direction where the app promises more than PHP allows** —
+that is the combination that fails invisibly. Whatever the limit ends up being,
+`AvatarService` must handle a non-`UPLOAD_ERR_OK` `$_FILES` entry and return a `422`
+naming the real size limit, not a generic failure.
+
 ### 8G firewall — test after enabling
 
 The 8G blocklist inspects request URIs, query strings, user agents, and referrers. Nothing
@@ -283,8 +304,8 @@ $home    = dirname($docroot, 2);      // ~
 $name    = basename($docroot);        // <name>
 
 foreach ([
-    "$home/apps/$name/app/bootstrap.php",   // production
-    __DIR__ . '/../../app/bootstrap.php',   // local checkout
+    "$home/apps/$name/app/bootstrap.php",   // production: ~/apps/<name>/
+    __DIR__ . '/../../app/bootstrap.php',   // local: public_html/api/ -> repo root app/
 ] as $bootstrap) {
     if (is_file($bootstrap)) { require $bootstrap; return; }
 }
@@ -296,6 +317,14 @@ echo '{"ok":false,"error":{"code":"server_error","message":"bootstrap not found"
 
 This is why the `~/apps/<name>` ↔ `~/sites/<name>` naming convention matters: it lets the
 stub locate the application without being told where it is.
+
+**This exact file is also `public_html/api/index.php`** — one file, two identical copies,
+written in Phase 0. The two candidate paths are what make the same bytes correct in both
+places: in a local checkout the production path misses (there is no `~/apps/public_html/`)
+and it falls through to `__DIR__/../../app/bootstrap.php`, which from `public_html/api/` is
+the repo's own `app/`. Copy it; **do not symlink** — PHP resolves `__DIR__` through symlinks
+to the real path, so the fallback would look under `deploy/` and find nothing. If the copies
+ever drift, `deploy/remote/` is the source of truth.
 
 ### `config/config.php` (created once on the server, never synced)
 
@@ -470,10 +499,19 @@ echo "-> pulling avatars"
 rsync -avz "$REMOTE:$DOCROOT/avatars/" backups/avatars/
 
 echo "-> pruning dumps older than the newest $KEEP"
-ls -1t backups/db-*.sql.gz | tail -n "+$((KEEP + 1))" | xargs -r rm --
+# Portable: BSD xargs (macOS) has no -r, so it would run `rm --` on empty input and
+# exit non-zero under `set -e` — failing a backup that actually succeeded. A while-read
+# loop needs no such flag and behaves identically on macOS and Linux.
+ls -1t backups/db-*.sql.gz 2>/dev/null | tail -n "+$((KEEP + 1))" | while read -r old; do
+  rm -- "$old"
+done
 
 echo "backup complete: backups/db-$STAMP.sql.gz"
 ```
+
+**These scripts run on the developer's Mac**, so they are written for BSD userland as well
+as GNU. The `stat -f%z` / `stat -c%s` fallback above is the other place that matters; if you
+add a third, keep the same habit rather than assuming GNU flags.
 
 `backups/` is gitignored. The avatar pull is a plain mirror with **no `--delete`**, so a
 file removed on the server stays in the local backup — which is the point. `deploy.sh` runs
@@ -551,6 +589,9 @@ Run this with the 8G firewall **enabled**.
 - [ ] `/default.svg` returns the SVG — a player with no avatar shows a tile, not a broken
       image.
 - [ ] `$SITE/avatars/test.php` returns 403.
+- [ ] **An avatar upload of a real phone photo (3–5 MB) succeeds**, or fails with a `422`
+      that states the limit. Silence here means PHP's `upload_max_filesize` is below the
+      app's cap — see the section above.
 - [ ] A second deploy actually changes the page — `index.html` is not being cached.
 
 **Rollback**

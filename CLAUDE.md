@@ -35,7 +35,8 @@ Specs live in `docs/`. Build order and the definition of done for each step is i
   last hand and recomputes.
 - **Rulesets are snapshotted onto a game at creation.** Editing a ruleset must never
   change the scores of a game already played.
-- **All money-like values are integers.** Points only, no decimals, no currency.
+- **All point values are integers.** Points only, no decimals, no currency. Nothing in
+  this app is denominated in money, and no label should imply otherwise.
 - **Rank by net points within a game; by rate across games.** See decision D13.
 - **No display strings in the API.** It returns enums (`"self_pick"`, `wind_index: 2`);
   the frontend translates. See `docs/07-terminology.md`.
@@ -48,6 +49,10 @@ Specs live in `docs/`. Build order and the definition of done for each step is i
   Never add one in a subdirectory — mod_rewrite rules are not inherited, so it would bypass
   the firewall and the HTTPS redirect. See D20.
 - **Seed data lives in `bin/seed.php`, never in a migration.** `migrations/` is schema only.
+- **One `package.json`, at the repo root.** `frontend/` holds source and `vite.config.ts`
+  only. Vite's root is `frontend/`, so `build.outDir: '../dist'` lands at repo-root `dist/`
+  — the path `deploy.sh` ships. A nested manifest breaks the root `bun install` the deploy
+  depends on. See D28.
 
 ## Stack
 
@@ -68,7 +73,9 @@ bun run dev            # Vite dev server (proxies /api to the local PHP server)
 bun run build          # production build into dist/
 bun run serve:api      # php -S localhost:8080 -t public_html public_html/router.php
 composer test          # PHPUnit — scoring engine tests must stay green
-./deploy/deploy.sh     # rsync build + PHP app to shared hosting
+./deploy/deploy.sh     # rsync build + PHP app to shared hosting (code only)
+./deploy/migrate.sh    # schema changes - deliberate and separate from deploy
+./deploy/backup.sh     # database dump + avatar pull
 ```
 
 ## Primary display target

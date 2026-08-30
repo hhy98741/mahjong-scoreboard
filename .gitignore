@@ -14,7 +14,11 @@ vendor/
 .vite/
 *.tsbuildinfo
 
-# bun.lockb and composer.lock ARE committed - reproducible installs
+# The lockfiles ARE committed - reproducible installs, and deploy.sh runs
+# `bun install --frozen-lockfile`, which fails outright without one.
+# Bun writes bun.lock (text) on current versions and bun.lockb (binary) on older
+# ones; whichever your Bun produces, commit it. There is only one, at the repo
+# root - frontend/ has no manifest of its own (D28).
 
 # ---------------------------------------------------------------- runtime data
 # Uploaded avatars are user data, not source. Backed up by deploy/backup.sh.

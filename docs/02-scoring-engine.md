@@ -51,7 +51,7 @@ At `N=4` this reduces to the familiar `+4B` / `+6B`. Winner receipts by player c
 **The 2-player identity is intentional** (D23). With one opponent, "discarder pays double"
 and "the lone loser pays the self-draw share" are the same 2B, so both outcomes pay the
 same. `win_type` is still recorded — it is real history and feeds the win-type split
-report — it just does not change the money.
+report — it just does not change the points.
 
 **Bao (包)** is the "one player pays for everybody" rule — used when one player is judged
 responsible for the entire hand (the classic case: feeding a tile to someone showing nine
@@ -343,6 +343,13 @@ Starting at `round=East, dealer chair=East, hand=1`:
 | S13 | `N=2`: two consecutive non-dealer wins | **South** round, dealer 0 |
 | S14 | `N=2`: 8 consecutive non-dealer wins | **COMPLETE**. Four rounds × 2 deals |
 | S15 | any `N`: "Deal *k* of *N*" matches the rank of `dealer_wind_index` in `OCCUPIED` | |
+
+**S5 is deliberately retired**, not renumbered — the same treatment as P4. It read "then Cal
+wins, then Dee wins, then Ann wins", walking the deal by hand to the round boundary at four
+players. S6 asserts the same boundary directly and generalises, and S10/S13 cover it at
+three and two players, so S5 was three vectors' worth of setup testing what one vector now
+tests better. The gap stays so nobody reinstates a four-player-shaped vector by noticing a
+missing number.
 
 ### Invariants (property tests, all `N`)
 

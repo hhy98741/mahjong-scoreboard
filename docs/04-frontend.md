@@ -9,12 +9,45 @@ expense of the TV.
 
 ## Setup
 
+**There is exactly one `package.json`, and it lives at the repository root** (D28). It
+carries all four scripts — including `serve:api`, which is a PHP command and has nothing to
+do with the frontend — so `bun install` and `bun run build` work from the repo root, which
+is where `deploy/deploy.sh` runs them.
+
 ```
-bun create vite frontend --template preact-ts
-bun add @preact/signals
+bun init -y                      # root package.json
+bun add -d vite @preact/preset-vite typescript
+bun add preact @preact/signals
 ```
 
-Allowed dependencies: `preact`, `@preact/signals`. Everything else — routing, fetch
+Do **not** run `bun create vite frontend`. It scaffolds a second `package.json` and a
+second lockfile inside `frontend/`, and then `bun install --frozen-lockfile` at the root
+installs nothing the build needs.
+
+`frontend/` holds only source: `frontend/src/`, `frontend/public/`, and
+`frontend/vite.config.ts`. Vite's project root is the directory containing that config, so:
+
+```ts
+// frontend/vite.config.ts
+export default defineConfig({
+  base: '/',
+  build: { outDir: '../dist', emptyOutDir: true },
+  server: { proxy: { '/api': 'http://localhost:8080',
+                     '/avatars': 'http://localhost:8080' } },
+})
+```
+
+`outDir` is resolved **relative to Vite's root**, so `'../dist'` lands at repo-root `dist/`
+— which is the path `deploy.sh` syncs. Get the root wrong and `'../dist'` writes to the
+parent of the repository, the build appears to succeed, and the deploy silently ships a
+stale bundle. Root scripts therefore always name the config explicitly:
+
+```json
+"dev":   "vite --config frontend/vite.config.ts",
+"build": "vite build --config frontend/vite.config.ts"
+```
+
+Allowed runtime dependencies: `preact`, `@preact/signals`. Everything else — routing, fetch
 wrapper, charts, the seating diagram — is hand-written. A hash router in ~30 lines is less
 trouble than a dependency. Charts and the diamond are inline SVG.
 
@@ -24,9 +57,8 @@ rule at all. A path-based router would need a "send unknown paths to index.html"
 `.htaccess` — a file that also carries the owner's firewall. Hash routing keeps our rules
 and theirs from interacting. See `05-deployment.md`.
 
-`vite.config.ts` sets `base: '/'`, `build.outDir: '../dist'`, and dev-proxies `/api` and
-`/avatars` to `http://localhost:8080`. **Do not set `changeOrigin` on that proxy** — it
-rewrites `Host` while leaving `Origin` alone, which trips the API's CSRF check and 403s
+**Do not set `changeOrigin` on the dev proxy** (its default is `false`, so leave it unset) —
+it rewrites `Host` while leaving `Origin` alone, which trips the API's CSRF check and 403s
 every write in local development. See `03-api.md` § Auth.
 
 ## Structure
@@ -97,7 +129,11 @@ sit or how many turn up. With more than four players on file the cycle repeats, 
 fine — a game seats at most four, and Setup shows every player's swatch so a clash inside
 one regular group is easy to see and change.
 
-Dark is the default. Offer a light toggle in the menu bar, persisted to `localStorage`.
+Dark is the default. Offer a light toggle in the menu bar, persisted to `localStorage` under
+**`mahjong.theme`** (`'dark'` | `'light'`), alongside `mahjong.lang` from
+`07-terminology.md`. Apply it by setting `data-theme` on `<html>` **before first paint** —
+read it in a tiny inline script in `index.html`, not in a Preact effect, or the app flashes
+dark on every load for a light-theme user.
 
 ## State discipline
 
@@ -118,6 +154,29 @@ round state — that is exactly where a scoreboard drifts out of sync with its o
 | `#/history` | History | Game list + reports. |
 | `#/history/game/:id` | Game detail | Full hand log + score curve. |
 | `#/history/player/:id` | Player detail | Career stats. |
+
+---
+
+## Home (`#/`)
+
+Small, but it is the first screen after login and every other screen is reached through it.
+
+On mount it calls `GET /api/games/current`:
+
+- **A game is in progress** → redirect immediately to `#/game/{id}`. Do not render an
+  intermediate menu; on a table night the laptop gets opened, reopened, and reloaded
+  constantly, and every one of those should land back on the scoreboard with no click.
+- **`404`, no live game** → render three large targets: **New game**, **History**,
+  **Setup**. Beneath them, a one-line summary of the most recent completed game (date,
+  winner, final margin) linking to `#/history/game/{id}`, so the screen is not empty on a
+  fresh install and is mildly interesting on an established one.
+
+**New game is the only route to `#/new`**, and it exists only when no game is live — which
+is what keeps the client from ever hitting the `409` that integrity rule 14 raises on a
+second `POST /api/games`. Should a stale tab reach `#/new` anyway and get that `409`, treat
+it as a redirect: refetch `current` and route to the live game rather than showing an error.
+Ending the live game (menu bar → End game, or the game-complete banner's "Start new game")
+is what makes `#/new` reachable again.
 
 ---
 

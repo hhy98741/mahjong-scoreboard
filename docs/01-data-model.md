@@ -43,7 +43,8 @@ CREATE TABLE login_attempts (
 CREATE TABLE players (
   id           INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name         VARCHAR(80)  NOT NULL,
-  avatar_path  VARCHAR(255) NULL,          -- e.g. 'avatars/7-a1b2c3.webp'; NULL = default
+  avatar_path  VARCHAR(255) NULL,          -- e.g. 'avatars/7-a1b2c3d4.webp'; NULL = default
+                                            -- {player_id}-{random8}.webp, see 03-api.md
   color        CHAR(7)      NOT NULL DEFAULT '#6b7280',  -- '#rrggbb' accent on the scoreboard.
                                                         -- PlayerRepo always assigns one from
                                                         -- the tile cycle (D26); this neutral
@@ -245,7 +246,8 @@ These are not all expressible as FK constraints; enforce them in PHP and cover w
    narrower than the points table in `ruleset_snapshot`.
 9. Hands may only be added to a game with `status = 'in_progress'`.
 10. Only the highest `hand_number` may be deleted.
-11. `ruleset_points` has exactly one row for every faan from 0 to `table_max_faan`, no gaps.
+11. `ruleset_points` has exactly one row for every faan from 0 to `table_max_faan`, no gaps,
+   and `0 <= table_max_faan <= 13` — the ceiling of the seeded Hong Kong table (D8b).
 12. `0 <= games.min_faan <= games.max_faan <= ruleset_snapshot.table_max_faan`.
 13. Every hand writes exactly `player_count` `hand_scores` rows summing to zero.
 14. **At most one game may have `status = 'in_progress'` at a time.** Enforced in PHP at

@@ -25,7 +25,7 @@ config/
   config.example.php          # committed
   config.php                  # gitignored: db creds, session name, paths
 public_html/                  # LOCAL docroot only; production ships deploy/remote/
-  api/index.php               # front controller: require ../../app/bootstrap.php
+  api/index.php               # front controller; a verbatim copy of deploy/remote/api/index.php
   router.php                  # dev-server router, see below. Not deployed.
   avatars/
 bin/
@@ -99,6 +99,14 @@ and rejects any request whose `Origin` header is present and whose host does not
 request's own `Host` header. **There is no configured site origin** (D17, D17b): the check is
 self-referential, so it works unchanged on localhost, on a staging host, and after a domain
 move. Together with `SameSite=Lax` that is sufficient here. Do not build a token system.
+
+**The one exception is `POST /api/players/{id}/avatar`**, which is `multipart/form-data` by
+necessity — a file upload cannot be a JSON body. The content-type check must allow
+`multipart/form-data` on that route specifically; **the `Origin` check still applies to it,
+unchanged, and is what actually protects it.** Note that multipart is a CORS "simple"
+content type, so it is exactly the shape a cross-origin form could submit without a
+preflight — which is why the origin check is the load-bearing control here and the
+content-type rule never was. Do not widen the multipart allowance to any other route.
 
 Why the self-referential form is enough: the attack is a page on `evil.com` firing
 `fetch('https://<site>/api/games', {method:'POST'})`. The browser sets **both** headers, and
@@ -178,8 +186,13 @@ and is not covered by the mod_rewrite execution deny's intent.
 | GET | `/api/rulesets` | Each includes its full `points` map. |
 | POST | `/api/rulesets` | `{name, table_max_faan, penalty_default, points:{faan:base}}`. `?copy_from={id}` clones an existing one. Rulesets no longer carry a selectable band — that is per game. |
 | GET | `/api/rulesets/{id}` | |
-| PUT | `/api/rulesets/{id}` | Full replace of the points table. Validate `0 <= table_max_faan <= 30`, a row present for **every** faan 0..`table_max_faan`, all `base_points >= 0`. Shrinking `table_max_faan` deletes the now-orphaned rows. |
+| PUT | `/api/rulesets/{id}` | Full replace of the points table. Validate `0 <= table_max_faan <= 13`, a row present for **every** faan 0..`table_max_faan`, all `base_points >= 0`. Shrinking `table_max_faan` deletes the now-orphaned rows. |
 | DELETE | `/api/rulesets/{id}` | **409** if it is `is_default` or referenced by an `in_progress` game. Completed games are unaffected — they carry their own snapshot. |
+
+`table_max_faan` is capped at **13** on both `POST` and `PUT` — the ceiling of the seeded
+Hong Kong table (D8b). It is not a technical limit; it is the range the points table is
+specified over, and `Domain\Scoring::basePoints` clamps to it defensively (P12). Raising it
+later means changing this bound, the Setup dropdown, and nothing else.
 
 ## Games
 
@@ -323,3 +336,11 @@ excluded and `in_progress` and `completed` games are included.
 
 Compute these in SQL against `hand_scores` and `hands`. They are read-only and cheap;
 do not cache.
+
+**These five cover Tier 1 and the two Tier 2 reports that need bespoke shapes.** The rest of
+`06-history-reports.md` — streaks and records (#7), feeder stats (#8), the win-type split
+(#9), session summary (#10), head-to-head (#11), and `GET /api/stats/export.csv` (#13) —
+has **no endpoint specified yet**, deliberately. They are Phase 10, they depend on nothing
+else, and they are easier to shape once there are real games to look at. Add them to this
+table as they are built, keeping the same four filters and the same `player_count=4`
+default (D25).

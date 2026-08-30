@@ -95,7 +95,7 @@ Everything from the leaderboard row for one person, plus:
 
 ## Tier 2 — the fun ones
 
-### 5. Money-flow matrix
+### 5. Points flow matrix
 An N×N grid: net points transferred from the row player to the column player,
 across all hands. Color the cells diverging red/green.
 
