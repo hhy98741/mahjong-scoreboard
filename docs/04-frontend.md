@@ -3,9 +3,9 @@
 TypeScript + Preact + `@preact/signals`, bundled by Vite, managed with Bun.
 
 **Design target: a laptop driving a large TV, landscape, 1920×1080.** One person types;
-three people read from across the room. Type is large, contrast is high, the entry
-controls are the only small things on screen. It must still work on a phone, but never at
-the expense of the TV.
+the others read from across the room. Type is large, contrast is high, the entry controls
+are the only small things on screen. It must still work on a phone, but never at the
+expense of the TV.
 
 ## Setup
 
@@ -19,10 +19,10 @@ wrapper, charts, the seating diagram — is hand-written. A hash router in ~30 l
 trouble than a dependency. Charts and the diamond are inline SVG.
 
 **Routing is hash-based (`#/game/41`), and that is deliberate.** Everything after the `#`
-stays in the browser and is never sent to Apache, so deep links work with no server
-rewrite rule at all. A path-based router would need a "send unknown paths to index.html"
-fallback in `.htaccess` — a file the owner maintains by hand, with a firewall in it. Hash
-routing keeps our rules and theirs from interacting. See `05-deployment.md`.
+stays in the browser and is never sent to Apache, so deep links work with no server rewrite
+rule at all. A path-based router would need a "send unknown paths to index.html" fallback in
+`.htaccess` — a file that also carries the owner's firewall. Hash routing keeps our rules
+and theirs from interacting. See `05-deployment.md`.
 
 `vite.config.ts` sets `base: '/'`, `build.outDir: '../dist'`, and dev-proxies `/api` and
 `/avatars` to `http://localhost:8080`.
@@ -52,10 +52,8 @@ Plain CSS with custom properties in `tokens.css` — no Tailwind, no CSS-in-JS.
 
 ## Colour scheme
 
-Themed on the tiles themselves: bamboo green, character red, dot blue, bone-ivory faces,
-with a felt-green table as the ground.
-
-`styles/tokens.css`:
+Themed on the tiles: bamboo green, character red, dot blue, bone-ivory faces, with a
+felt-green table as the ground.
 
 ```css
 :root {
@@ -89,7 +87,7 @@ with a felt-green table as the ground.
 }
 ```
 
-**Default player colours** are the four tile colours, assigned in seat order at game
+**Default player colours** are the four tile colours, assigned in chair order at game
 creation and overridable per player in Setup: red `#C1272D`, green `#1B8A4B`,
 blue `#1F5FA8`, gold `#B08A2E`. Four players, four suits — it reads instantly.
 
@@ -99,8 +97,8 @@ Dark is the default. Offer a light toggle in the menu bar, persisted to `localSt
 
 `api.ts` returns the whole game state on every write. `store.ts` holds
 `currentGame = signal<GameState|null>(null)` and every mutation is
-`currentGame.value = await api.recordHand(...)`. **Never** locally patch scores, ranks,
-or round state — that is exactly where a scoreboard drifts out of sync with its own math.
+`currentGame.value = await api.recordHand(...)`. **Never** locally patch scores, ranks, or
+round state — that is exactly where a scoreboard drifts out of sync with its own math.
 
 ## Routes
 
@@ -108,7 +106,7 @@ or round state — that is exactly where a scoreboard drifts out of sync with it
 |---|---|---|
 | `#/login` | Login | Redirect target when `/api/auth/me` returns 401. |
 | `#/` | Home | If a game is in progress, redirect straight to it. Otherwise: New game / History / Setup. |
-| `#/new` | New game | Ruleset picker, then assign four players to E/S/W/N. |
+| `#/new` | New game | Player count, ruleset, 番 range, seats. |
 | `#/game/:id` | **Scoreboard** | The main screen. |
 | `#/setup` | Setup | Tabs: Players, Rulesets. |
 | `#/history` | History | Game list + reports. |
@@ -126,6 +124,8 @@ Four regions, per the owner's sketch (`docs/reference/scoreboard-dashboard.jpg`)
 │ MENU BAR   Mahjong · Sunday night      [History] [Setup] [中/EN] [End]   │
 ├────────────────────────────────────┬─────────────────────────────────────┤
 │  南圈  South Round · Deal 2 of 4   │  STANDINGS            (net points)  │
+│  ("of 4" is the player count N -   │                                     │
+│   rounds are always four)          │                                     │
 │                                    │   1  ANN                    +144   │
 │           Player 2                 │   2  CAL                     +32   │
 │              ╱ ╲                   │   3  DEE                     −48   │
@@ -155,9 +155,9 @@ and End game. Kept thin — it is chrome, not content.
 
 ### Seating diamond (top left) — `SeatingDiamond.tsx`
 
-A square table rotated 45°, so all four seats are visible as the four *sides* of the
-diamond. Player names and avatars sit **outside** each side; the wind character sits
-**inside**. Above it, the round label (`南圈 South Round · Deal 2 of 4`).
+A square table rotated 45°, so every chair is one of the four *sides* of the diamond.
+Player names and avatars sit **outside** each side; the wind character sits **inside**.
+Above it, the round label (`南圈 South Round · Deal 2 of 4`).
 
 Render as inline SVG, `viewBox="0 0 400 400"`. Do not use CSS `transform: rotate(45deg)` —
 you would have to counter-rotate every label.
@@ -165,65 +165,88 @@ you would have to counter-rotate every label.
 ```
 Diamond polygon:  (200,60) (340,200) (200,340) (60,200)
 
-Seat        Side of the diamond    Wind glyph at    Name + avatar at
+Chair       Side of the diamond    Wind glyph at    Name + avatar at
 ──────────────────────────────────────────────────────────────────────
-seat 0      upper-left             (155,155)        (86,86)
-seat 1      lower-left             (155,245)        (86,314)
-seat 2      lower-right            (245,245)        (314,314)
-seat 3      upper-right            (245,155)        (314,86)
+0 East      upper-left             (155,155)        (86,86)
+1 South     lower-left             (155,245)        (86,314)
+2 West      lower-right            (245,245)        (314,314)
+3 North     upper-right            (245,155)        (314,86)
 ```
 
-**The seat→screen-position order is upper-left → lower-left → lower-right → upper-right.**
-That traverses the diamond counterclockwise, which is the direction winds rotate in
-mahjong, so the East marker visibly walks around the table the correct way.
+Upper-left → lower-left → lower-right → upper-right traverses the diamond
+**counterclockwise**, which is the direction the deal travels.
 
-Players never move, and the wind characters are **not** fixed seat labels. What changes
-each hand is the **wind character shown at each seat**, computed as
-`wind_index = (seat_index - dealer_seat_index + 4) % 4`. So 東 walks counterclockwise from
-one seat to the next as the deal passes, and every player's displayed wind is their real
-wind for the hand about to be played — which is what matters for scoring.
+#### Chairs are fixed; wind characters rotate
 
-The **opening-dealer marker** (開莊) is a filled dot in `--danger` beside the name of the
-player at `seat_index 0` — whoever took the first deal of the game. **It never moves for
-the whole game.** It is a fixed reference point, not a live indicator: it shows where each
-round began, so you can see at a glance how far the deal has travelled and when the
-rotation is about to complete.
+This is the subtle part. Read `02-scoring-engine.md` → "All four winds always exist"
+before implementing.
 
-The **current dealer** needs no separate marker — they are whoever is showing 東. Give
-that seat a brighter fill and the 莊 glyph so it reads instantly.
+- **Positions are chairs.** A chair is named by the wind it *started* at, and a player
+  never moves from theirs. The player drawn upper-left is in the East chair for the whole
+  game.
+- **The glyph shown at a chair is its CURRENT wind**, not its name:
+  `currentWind(chair) = (chair - state.dealer_wind_index + 4) % 4`. So the upper-left
+  position may well be displaying 北 partway through a game. That is correct, not a bug.
+- **All four winds are always shown, including at empty chairs.** With fewer than four
+  players, render the unoccupied sides as a dimmed outline with **their current wind glyph
+  and no name**. This makes the model visible: the winds keep turning through all four
+  positions, and the deal simply skips the empty ones.
 
-Together these two are exactly what the owner's sketch shows: Player 1 carries the dot
-(they opened the deal) while currently holding 南, because the deal has since passed on.
+Never derive which sides are empty from the player count — read it from `seats[].chair`.
+Two players might be at East and North (adjacent) just as easily as East and West
+(opposite).
 
-Fill the diamond with `--tile-green` at low opacity over `--felt`, with a `--gold`
-stroke. Ring each avatar in that player's colour.
+#### Markers
+
+- **Current dealer** — whichever chair is showing 東. Give it a brighter fill and the 莊
+  glyph. It moves every time the deal passes.
+- **Opening dealer (開莊)** — a filled dot in `--danger` beside the name at the East chair,
+  static for the whole game. Since the deal always starts and every round always restarts
+  at East, this dot marks where each round begins and ends. It is a fixed reference point,
+  not a live indicator.
+
+Together these two are exactly what the owner's sketch shows: Player 1 carries the dot —
+they are in the East chair, where the deal began — while currently displaying 南, because
+the deal has since passed on and the winds have rotated.
+
+Fill the diamond with `--tile-green` at low opacity over `--felt`, with a `--gold` stroke.
+Ring each avatar in that player's colour.
 
 ### Standings (top right) — `Standings.tsx`
 
-**Ranked by net points, highest first** — this is a live game, and net points is the
-only ranking that makes sense within one game. Four rows: rank, avatar, name in the
-player's colour, and the total as the largest text on screen (72px+,
+**Ranked by net points, highest first** — within a single game that is the only ranking
+that makes sense, since everyone has played the same hands (D13). One row per player: rank,
+avatar, name in the player's colour, and the total as the largest text on screen (72px+,
 `font-variant-numeric: tabular-nums`, `--positive` / `--negative`, always with an explicit
-`+` or `−`). Ties share a rank and keep seat order.
+`+` or `−`). Ties share a rank and keep chair order.
 
-Animate rank changes with a FLIP transition. It is cheap, and it lands on the exact
-moment everyone is looking at the screen.
+Animate rank changes with a FLIP transition. It is cheap, and it lands on the exact moment
+everyone is looking at the screen.
 
 ### Hand history (bottom right) — `HandHistory.tsx`
 
 Directly beneath the standings, `overflow-y: auto` on its own so it scrolls without moving
 anything else. Newest first — the API already sorts descending. Each row: hand number,
-outcome, winner, faan, win type, the four deltas, and a 包 badge when `liable_player_id`
-is set. No pagination; a game is under ~40 hands.
+outcome, winner, faan, win type, and the deltas. Show a 包 badge when `liable_player_id` is
+set. No pagination; a game is under ~40 hands.
 
 ### Entry area (bottom) — `EntryBar.tsx`
 
 Progressive disclosure, so the common case is three clicks:
 
-1. **Winner** — four buttons with avatars, not a `<select>`. Big targets.
-2. **番 Faan** — a row of number buttons from `min_faan` to `max_faan`, wrapping at 8.
-3. **Win type** — `自摸 Self-pick` / `出銃 Discard`. Choosing discard reveals a
-   three-button picker (winner excluded).
+1. **Winner** — one button per seated player with avatars, not a `<select>`.
+2. **番 Faan** — `FaanPicker.tsx`. Offers **only** the values in the game's band,
+   `game.min_faan` through `game.max_faan` inclusive. Nothing outside it is selectable and
+   there is no free-text entry, so an out-of-range faan cannot be recorded. With a band of
+   2–8 the picker shows exactly 2,3,4,5,6,7,8 — even though the points table still defines
+   values for 0, 1, and 9–13.
+
+   Rendered as a row of number buttons wrapping at 8 per row rather than a `<select>`: one
+   click instead of two, and every option stays visible from across the room. Swapping it
+   for a dropdown is a change to this one component.
+3. **Win type** — `自摸 Self-pick` / `出銃 Discard`. Choosing discard reveals a picker of
+   the other players (the winner excluded). At two players the discarder is the only
+   opponent, so preselect them.
 4. **包 checkbox** — collapsed by default. When ticked, a player picker appears,
    pre-selected to the discarder if there is one; the winner is excluded.
 5. **Record hand** — disabled until valid; clears the form on success.
@@ -234,8 +257,8 @@ points-each field pre-filled from `ruleset.penalty_default`.
 **Undo** always names what it will remove (`↶ Undo hand 6`) and confirms first.
 
 When `state.is_complete`, replace the entry area with a final-standings banner and a
-"Start new game" button. Keep Undo available — the last hand is the one most likely to
-have been mistyped.
+"Start new game" button. Keep Undo available — the last hand is the one most likely to have
+been mistyped.
 
 ### Keyboard shortcuts
 
@@ -243,8 +266,8 @@ This runs on a laptop; make the operator fast.
 
 | Key | Action |
 |---|---|
-| `1`–`4` | Select winner by standings position |
-| `Q W E R` | Select winner by seat index 0–3 (upper-left, lower-left, lower-right, upper-right — the counterclockwise order the winds travel) |
+| `1`–`4` | Select winner by standings position (only as many as there are players) |
+| `Q W E R` | Select winner by chair: East, South, West, North. Only occupied chairs are bound. |
 | digits | Type the faan value |
 | `S` | 自摸 Self-pick |
 | `D` | 出銃 Discard, then `Q W E R` for the discarder |
@@ -257,45 +280,95 @@ Show a `?` overlay listing them. Ignore shortcuts while a text input has focus.
 
 ---
 
+## New game (`#/new`)
+
+Every per-game decision lives here, in this order:
+
+```
+Players       ( ) 2      ( ) 3      (o) 4
+
+Ruleset       [ House rules  v ]      (supplies the 番 -> points table)
+番 range      [ 2 v ]  to  [ 8 v ]    (defaults 2 and 8)
+
+Seats         pick who sits where - 東 East is required
+   東 East    [ Ann      v ]   <- opening dealer
+   南 South   [ -- empty v ]
+   西 West    [ Ben      v ]
+   北 North   [ -- empty v ]
+                                      ┌──────────┐
+                                      │   live   │  diamond preview,
+                                      │  preview │  updates as you pick
+                                      └──────────┘
+                                            [ Start game ]
+```
+
+**All four wind rows are always shown**, whatever the player count. Fill exactly
+`player_count` of them and leave the rest empty. The wind rows *are* the seat picker; there
+is no separate step.
+
+Rules the form enforces:
+
+- **東 East is required** and cannot be emptied. The opening dealer sits there, and the
+  round-boundary logic depends on it.
+- Exactly `player_count` rows filled; Start stays disabled until then.
+- A player may appear in only one row.
+- Changing the player count does not clear the form — it only changes how many rows must be
+  filled. Reducing it below the number already filled flags the surplus rather than
+  silently dropping someone.
+
+**Any combination is allowed** as long as East is one of them: East+North and East+South
+are as valid as East+West. Pre-fill the defaults (2 → East + West, 3 → East + South + West,
+4 → all) so the common case is one click, but never enforce them.
+
+The form submits winds, never indices — see `POST /api/games` in `03-api.md`.
+
+The live diamond preview matters here; it is the difference between reading a form and
+seeing where everyone will sit. Reuse `SeatingDiamond.tsx` in a read-only mode.
+
+---
+
 ## Setup (`#/setup`)
 
-**Players tab.** Grid of cards: avatar, name, colour swatch. Click to edit inline —
-rename, recolour, upload/remove avatar, retire. Upload shows a client-side preview and a
-progress state; the server does the real cropping.
+**Players tab.** Grid of cards: avatar, name, colour swatch. Click to edit inline — rename,
+recolour, upload/remove avatar, retire. Upload shows a client-side preview and a progress
+state; the server does the real cropping.
 
 **Rulesets tab.** List, with the default marked. The editor:
 
 ```
-Name          [ House rules              ]
-Minimum 番    [ 3 ▾ ]     Maximum 番   [ 13 ▾ ]
+Name              [ House rules          ]
+Table extends to  [ 13 ▾ ]   <- how many rows the points table has
 Penalty default (points each)  [ 128 ]
 
-  番     base points        Winner receives
+(The selectable 番 range is NOT here - it is chosen per game on #/new.)
+
+  番     base points        Winner receives (4 players)
   ────────────────────────────────────────────────────────────
    0     [   1 ]            出銃 4  /  自摸 6
    1     [   2 ]            出銃 8  /  自摸 12
    ...
-   3     [   8 ]            出銃 32 /  自摸 48        ← minimum
+   3     [   8 ]            出銃 32 /  自摸 48
    ...
-  13     [  64 ]            出銃 256 / 自摸 384       ← maximum
+  13     [  64 ]            出銃 256 / 自摸 384
 
   [ Fill by doubling ]  [ Fill linear: __ per 番 ]  [ Duplicate ruleset ]
 ```
 
-The live "winner receives" column is what makes this table comprehensible — show it.
-Changing max faan adds or removes rows immediately. On save, note that existing games are
-unaffected because they hold snapshots.
+The live "winner receives" column is what makes this table comprehensible — show it, and
+label it with the player count it assumes, since the multiplier changes with `N` (D23).
+Changing **Table extends to** adds or removes rows immediately. On save, note that existing
+games are unaffected because they hold snapshots.
 
 ## Error handling
 
 `api.ts` throws `ApiError` carrying `code`, `message`, `fields`. Field errors bind to the
-matching control; anything else raises a toast. A `401` clears the session signal and
-routes to `#/login`.
+matching control; anything else raises a toast. A `401` clears the session signal and routes
+to `#/login`.
 
 ## Accessibility & robustness
 
 - Keyboard-navigable throughout; visible focus rings.
-- Colour is never the only signal — totals also carry `+`/`−`, the current dealer carries
-  the 莊 glyph as well as a brighter fill, and the opening-dealer dot is paired with 開莊.
-- Ship an error boundary. A crash on the scoreboard mid-game is the worst possible
-  outcome; it must offer "reload" and never blank the screen.
+- Colour is never the only signal — totals carry `+`/`−`, the current dealer carries the 莊
+  glyph as well as a brighter fill, and the opening-dealer dot is paired with 開莊.
+- Ship an error boundary. A crash on the scoreboard mid-game is the worst possible outcome;
+  it must offer "reload" and never blank the screen.

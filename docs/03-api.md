@@ -104,9 +104,9 @@ per-player images server-side.
 | Method | Path | Body / notes |
 |---|---|---|
 | GET | `/api/rulesets` | Each includes its full `points` map. |
-| POST | `/api/rulesets` | `{name, min_faan, max_faan, penalty_default, points:{faan:base}}`. `?copy_from={id}` clones an existing one. |
+| POST | `/api/rulesets` | `{name, table_max_faan, penalty_default, points:{faan:base}}`. `?copy_from={id}` clones an existing one. Rulesets no longer carry a selectable band — that is per game. |
 | GET | `/api/rulesets/{id}` | |
-| PUT | `/api/rulesets/{id}` | Full replace of the points table. Validate `0 <= min_faan <= max_faan <= 30`, a row present for **every** faan 0..`max_faan`, all `base_points >= 0`. Shrinking `max_faan` deletes the now-orphaned rows. |
+| PUT | `/api/rulesets/{id}` | Full replace of the points table. Validate `0 <= table_max_faan <= 30`, a row present for **every** faan 0..`table_max_faan`, all `base_points >= 0`. Shrinking `table_max_faan` deletes the now-orphaned rows. |
 | DELETE | `/api/rulesets/{id}` | **409** if it is `is_default` or referenced by an `in_progress` game. Completed games are unaffected — they carry their own snapshot. |
 
 ## Games
@@ -115,11 +115,21 @@ per-player images server-side.
 
 ```json
 { "ruleset_id": 1, "name": "Sunday night",
-  "seats": [12, 7, 3, 19] }
+  "player_count": 4,
+  "min_faan": 2, "max_faan": 8,
+  "seats": [ { "wind": 0, "player_id": 12 },
+             { "wind": 3, "player_id": 7 } ] }
 ```
 
-`seats` is positional: index 0 = East, 1 = South, 2 = West, 3 = North. Must be four
-distinct active player ids. Copies the ruleset into `ruleset_snapshot`. **409** if another
+- `player_count` — 2, 3 or 4. Defaults to 4.
+- `min_faan` / `max_faan` — the selectable band for **this game**. Default `2` and `8`.
+  Must satisfy `0 <= min_faan <= max_faan <= ruleset.table_max_faan`.
+- `seats` — one entry per player, each naming the **wind that player starts at**
+  (`0`=East, `1`=South, `2`=West, `3`=North). Length must equal `player_count`, winds must
+  be distinct, and **wind `0` (East) must be present** — the opening dealer sits there.
+  Order is irrelevant. The example above is a two-player game at East and North.
+
+Player ids must be distinct and active. Copies the ruleset into `ruleset_snapshot`. **409** if another
 game is already `in_progress` (the app supports one live game at a time — simplifies the
 UI and matches how they actually play). → 201 with the full game state.
 
@@ -130,19 +140,21 @@ One request, everything the main screen needs.
 ```json
 { "ok": true, "data": {
   "game": { "id": 41, "name": "Sunday night", "status": "in_progress",
+            "player_count": 4, "min_faan": 2, "max_faan": 8,
             "started_at": "2026-08-30T18:04:00Z", "ended_at": null },
-  "ruleset": { "name": "House rules", "min_faan": 3, "max_faan": 13,
+  "ruleset": { "name": "House rules", "table_max_faan": 13,
                "penalty_default": 128, "points": { "3": 8, "4": 16 } },
   "seats": [
-    { "seat_index": 0, "player": { "id": 12, "name": "Ann", "colour": "#b91c1c",
-                                   "avatar_url": "/avatars/12-9f3a2b71.webp" },
-      "wind_index": 2, "wind": "West", "total": 144, "rank": 1 }
+    { "chair": 0, "player": { "id": 12, "name": "Ann", "colour": "#b91c1c",
+                              "avatar_url": "/avatars/12-9f3a2b71.webp" },
+      "current_wind_index": 2, "current_wind": "West",
+      "total": 144, "rank": 1 }
   ],
-  "state": { "round_wind": 0, "round_name": "East", "dealer_seat_index": 2,
+  "state": { "round_wind": 0, "round_name": "East", "dealer_wind_index": 2,
              "dealer_player_id": 3, "deal_in_round": 3, "next_hand_number": 7,
              "is_complete": false },
   "hands": [
-    { "id": 88, "hand_number": 6, "round_wind": 0, "dealer_seat_index": 1,
+    { "id": 88, "hand_number": 6, "round_wind": 0, "dealer_wind_index": 1,
       "outcome": "win", "winner_player_id": 12, "faan": 5, "win_type": "discard",
       "discarder_player_id": 7, "liable_player_id": null, "base_points": 16,
       "offender_player_id": null, "penalty_per_player": null, "note": null,
@@ -152,7 +164,9 @@ One request, everything the main screen needs.
 } }
 ```
 
-`seats[].total` and `rank` come from the replay. Rank is 1-based, dense, ties share a rank.
+`seats` has `player_count` entries. `chair` is fixed for the game and decides where the
+player is drawn on the diamond; `current_wind_index` is `(chair - dealer_wind_index + 4) % 4`
+and changes every time the deal passes. `seats[].total` and `rank` come from the replay. Rank is 1-based, dense, ties share a rank.
 `hands` is ordered **descending** by `hand_number` so the history panel renders newest-first
 without client-side sorting.
 
@@ -174,12 +188,12 @@ The only interesting write. Three body shapes discriminated by `outcome`:
 Server-side, in one transaction:
 
 1. `SELECT ... FOR UPDATE` the game; reject unless `status = 'in_progress'`.
-2. Replay to get the authoritative `round_wind`, `dealer_seat_index`, `hand_number`.
+2. Replay to get the authoritative `round_wind`, `dealer_wind_index`, `hand_number`.
    **Never trust client-supplied state.**
 3. Validate against rules 3–8 in `01-data-model.md` and V1–V7 in `02-scoring-engine.md`.
 4. Resolve `base_points` from the **snapshot**, compute deltas via `Scoring`.
 5. Assert the deltas sum to zero.
-6. Insert `hands` + four `hand_scores`.
+6. Insert `hands` + `player_count` `hand_scores` rows.
 7. Apply the transition; if COMPLETE, set `status='completed'`, `ended_at=NOW()`.
 8. Commit and return the same payload shape as `GET /api/games/{id}` (→ 201).
 
@@ -189,7 +203,7 @@ Returning the whole state means the frontend never patches its own store — it 
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/api/games` | `?status=&from=&to=&player_id=&limit=&offset=`. Summary rows only — id, name, status, dates, the four players and their final totals. No hands. |
+| GET | `/api/games` | `?status=&from=&to=&player_id=&limit=&offset=`. Also accepts `?player_count=`. Summary rows only — id, name, status, dates, player count, the seated players and their final totals. No hands. |
 | GET | `/api/games/current` | The single `in_progress` game, or `404`. The SPA's landing lookup. |
 | DELETE | `/api/games/{id}/hands/last` | Undo. **409** if the game has no hands. Reopens a completed game. Returns full state. |
 | POST | `/api/games/{id}/end` | `{status: "completed"\|"abandoned"}`. Manual early finish. |
@@ -202,7 +216,7 @@ Read-only, backing `06-history-reports.md`. All accept `?from=&to=&player_ids=`.
 
 | Path | Returns |
 |---|---|
-| `GET /api/stats/leaderboard` | Per player: net points, games, hands played/won, win rate, self-pick rate, biggest hand, average faan. |
+| `GET /api/stats/leaderboard` | Per player: net points, games, hands played/won, win rate, self-pick rate, biggest hand, average faan. Accepts `?player_count=` and **defaults to 4** (D25). |
 | `GET /api/stats/players/{id}` | The above plus a cumulative points-over-time series and a faan histogram. |
 | `GET /api/stats/flow` | 4×N matrix of net points transferred from player A to player B. |
 | `GET /api/stats/seats` | Net points and win rate grouped by `wind_index` at time of win — does East really win more? |

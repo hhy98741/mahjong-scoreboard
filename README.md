@@ -1,11 +1,12 @@
 # Mahjong Scoreboard
 
-A private web scoreboard for **offline** Hong Kong mahjong. Four people play with real
-tiles at a table; one person enters each hand's result on a laptop plugged into a TV, and
+A private web scoreboard for **offline** Hong Kong mahjong. Two, three or four people play
+with real tiles at a table; one person enters each hand's result on a laptop plugged into a TV, and
 everyone watches the running score.
 
-It does not simulate tiles or validate hands. A human decides the 番 (faan) count and
-types it in.
+It does not simulate tiles or validate hands. A human judges the 番 (faan) count and picks
+it from the values the game allows — the picker offers only the faan in the configured
+range, so an out-of-range score cannot be recorded.
 
 **Status: specified, not yet built.** Everything in `docs/` is written. Phase 0 of
 `docs/PLAN.md` is the next step.
@@ -18,9 +19,14 @@ types it in.
   net points, a scrolling hand history, and a one-line entry bar. Designed for a 1920×1080
   TV, readable across a room.
 - **Automatic round tracking** — the dealer keeps the deal on a win or a washout and
-  otherwise rotates counterclockwise. Four rotations make a round, four rounds a game. No
-  buttons to press; it is derived from who won.
-- **Hong Kong scoring** — a fully editable 番 → points table, with standard HK payments
+  otherwise rotates counterclockwise. Four rounds make a game whatever the player count, so
+  16 hands at four players, 12 at three, 8 at two. No buttons to press; it is derived from
+  who won.
+- **2, 3 or 4 players** — chosen per game, along with **which seats** they take. East is
+  always the opening dealer; everyone else can sit at any of South, West or North.
+- **Hong Kong scoring** — a fully editable 番 → points table on the ruleset, plus a
+  per-game selectable range (the table may run 0–13 while a given game allows only 2–8),
+  with standard HK payments
   (discarder pays double; self-pick pays all), 包 liability, 黃莊 draws, and penalties.
 - **Reusable players** with uploaded avatars.
 - **Long-term history** — past games, leaderboards, per-player stats, and reports.

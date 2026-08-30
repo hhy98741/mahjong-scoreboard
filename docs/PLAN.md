@@ -74,7 +74,10 @@ Pure PHP, no database, no HTTP. **This phase is tests-first.**
 
 - `Domain/Ruleset.php`, `Domain/Scoring.php`, `Domain/GameState.php`.
 - `tests/ScoringTest.php` and `tests/GameStateTest.php` covering **every** vector in
-  § Part 4 — P1–P12, S1–S9, the seat-wind case, and V1–V8.
+  § Part 4 — P1–P22 (all three player counts), W1–W12 (wind rotation with empty chairs),
+  S1–S15, I1–I4, V1–V10. W3 is the owner's worked example and must pass exactly.
+- The engine must be parameterised on `N` from the start. Retrofitting a player count into
+  code that assumes four seats is the kind of change that leaves one `% 4` behind.
 
 **Done when:** `composer test` is green and every listed vector has a named test. This is
 the one phase where "it looks right" is not acceptable — the numbers are the product.

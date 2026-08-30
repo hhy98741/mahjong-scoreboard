@@ -14,6 +14,19 @@ numbers are the point.
 Every report accepts a date range (`from`/`to`) and defaults to **all time**, with quick
 presets: All time · This year · Last 90 days · Last session.
 
+### Player count is a first-class filter (D25)
+
+Games can be 2, 3 or 4 handed, and **rate statistics are not comparable across them** — a
+2-player winner takes from one opponent, a 4-player winner from three, and hand win rate
+is naturally ~1/N. So:
+
+- Every report accepts `?player_count=` and **defaults to 4**.
+- The filter control is always visible with the current value shown, so nobody mistakes a
+  filtered leaderboard for the whole record.
+- Net points and games played are safe to total across counts; win rates, points per hand,
+  and the flow matrix are not. Where a report mixes them, break the figure out by count
+  rather than blending.
+
 ---
 
 ## Tier 1 — build with the history page
@@ -66,7 +79,8 @@ Two rate statistics are worth showing, and they answer different questions:
 | **Points per hand** | "Who is actually ahead per unit of play?" Far more data behind it, so it stabilises much sooner, but it is a less natural number to say out loud. |
 
 Default the sort to **Game win %**, with Points per hand adjacent, and always show
-`Games` beside them so a 100% built on two games is visibly thin. Grey out any player
+`Games` beside them so a 100% built on two games is visibly thin. The board is scoped to
+one player count at a time (D25). Grey out any player
 below a threshold (say 5 games) in the rate columns rather than hiding them.
 
 ### 4. Player detail
@@ -81,7 +95,7 @@ Everything from the leaderboard row for one person, plus:
 ## Tier 2 — the fun ones
 
 ### 5. Money-flow matrix
-A 4×4 (or N×N) grid: net points transferred from the row player to the column player,
+An N×N grid: net points transferred from the row player to the column player,
 across all hands. Colour the cells diverging red/green.
 
 This answers the question everyone at the table actually asks — *"who keeps paying me?"* —
@@ -92,8 +106,11 @@ For a `penalty`, attribute the offender's loss to each recipient. Draws contribu
 
 ### 6. Seat luck
 Net points and win rate grouped by the **wind the player held when the hand was played**
-(`(seat_index - dealer_seat_index + 4) % 4`), aggregated across every game. Settles the
-perennial argument about whether East is actually worth anything. Also break out **dealer
+(`(chair - dealer_wind_index + 4) % 4`), aggregated across every game at a given player
+count. Settles the
+perennial argument about whether East is actually worth anything. Note that at fewer than
+four players some winds never occur, so group by the wind actually held rather than
+assuming four buckets. Also break out **dealer
 win rate** — the dealer keeps the deal on a win, so a hot dealer compounds.
 
 ### 7. Streaks and records
