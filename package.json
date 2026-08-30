@@ -1,0 +1,20 @@
+{
+  "name": "mahjong-scoreboard",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite --config frontend/vite.config.ts",
+    "build": "vite build --config frontend/vite.config.ts",
+    "serve:api": "php -S localhost:8080 -t public_html public_html/router.php"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "@types/bun": "latest",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.11.1",
+    "preact": "^10.29.8"
+  }
+}

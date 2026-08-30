@@ -78,6 +78,20 @@ composer test          # PHPUnit — scoring engine tests must stay green
 ./deploy/backup.sh     # database dump + avatar pull
 ```
 
+## Browser verification
+
+When Claude Code needs to visually confirm frontend work (screenshots, checking a UI
+change actually renders, clicking through a flow), use **Playwright, run ad hoc via
+`bunx playwright`** — launch headless Chromium, drive it with a throwaway script, screenshot,
+read the result. Do not use the Claude in Chrome extension for this project: the owner runs
+multiple Chrome profiles, only one of which would have the extension, and there is no way to
+target a specific profile when Claude Code connects to Chrome.
+
+Keep Playwright ad hoc — install/run it via `bunx playwright ...` rather than adding it to
+`package.json`/`bun.lock` as a project devDependency, unless asked to make it permanent
+tooling (e.g. for an automated test suite). `bunx playwright install chromium` only needs to
+run once per machine; the browser binary is cached under `~/Library/Caches/ms-playwright`.
+
 ## Primary display target
 
 A **laptop connected to a large TV**, in landscape. One person enters hands on that
