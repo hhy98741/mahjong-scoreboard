@@ -230,3 +230,102 @@ export interface GameCurve {
   points: { hand_number: number; totals: Record<string, number> }[];
   round_boundaries: number[];
 }
+
+// GET /api/stats/flow — docs/03-api.md § GET /api/stats/flow, backing
+// docs/06-history-reports.md #5. `players` only lists players who appear on
+// either side of at least one attributed transfer, ordered by id ascending.
+// `matrix[i][j]` is the total net points `players[i]` paid to `players[j]`
+// (always >= 0); the diagonal is always 0.
+export interface FlowMatrix {
+  players: SeatPlayer[];
+  matrix: number[][];
+}
+
+// GET /api/stats/seats — docs/03-api.md § GET /api/stats/seats, backing
+// docs/06-history-reports.md #6. One row per wind actually held (ascending
+// by wind_index); at player_count < 4 not all four winds occur, so only
+// winds with hands > 0 are present. wind_index 0 is always the dealer, so
+// that row's win_rate doubles as the dealer win rate.
+export interface SeatLuckRow {
+  wind_index: number;
+  wind_name: string;
+  hands: number;
+  net_points: number;
+  hands_won: number;
+  win_rate: number | null;
+}
+
+// GET /api/stats/records — docs/03-api.md § GET /api/stats/records, backing
+// docs/06-history-reports.md #7. Eight fixed keys, each null when scope has
+// no qualifying data. Every entry links to `game_id` (the frontend routes to
+// `#/history/game/{game_id}`, same target as leaderboard.best_hand — there
+// is no standalone per-hand route); hand-specific entries also carry
+// `hand_id` for reference.
+export interface HandRecord {
+  player: SeatPlayer;
+  game_id: number;
+  hand_id: number;
+}
+
+export interface NightRecord {
+  player: SeatPlayer;
+  date: string;
+  net_points: number;
+  game_ids: number[];
+}
+
+export interface RecordsBoard {
+  biggest_hand_points: (HandRecord & { points: number }) | null;
+  biggest_hand_faan: (HandRecord & { faan: number }) | null;
+  longest_win_streak: (HandRecord & { length: number }) | null;
+  longest_drought: (HandRecord & { length: number }) | null;
+  biggest_comeback: (HandRecord & { deficit: number }) | null;
+  most_dealer_defences: (HandRecord & { defences: number }) | null;
+  best_night: NightRecord | null;
+  worst_night: NightRecord | null;
+}
+
+// GET /api/stats/feeders — docs/03-api.md § GET /api/stats/feeders, backing
+// docs/06-history-reports.md #8. Per player, as the discarder: hands dealt
+// into, points paid, and discard rate vs. the table average. Rows are
+// ordered by discard_rate descending (null last).
+export interface FeederRow {
+  player: SeatPlayer;
+  hands: number;
+  discards: number;
+  points_paid: number;
+  discard_rate: number | null;
+  vs_table_avg: number | null;
+}
+
+export interface FeederStats {
+  table_avg_discard_rate: number | null;
+  players: FeederRow[];
+}
+
+// GET /api/stats/win-types — docs/03-api.md § GET /api/stats/win-types,
+// backing docs/06-history-reports.md #9. Bao stays split by win type: a
+// discard bao always names the discarder as liable (rule 16), a self-pick
+// bao names a different, already-on-the-hook player (rule 5b) — merging the
+// two would hide the more interesting number. Rows ordered by
+// self_pick_win_share descending (null last).
+export interface BaoCounts {
+  liable: number;
+  won: number;
+}
+
+export interface WinTypeRow {
+  player: SeatPlayer;
+  hands: number;
+  wins: number;
+  self_pick_wins: number;
+  discard_wins: number;
+  self_pick_win_share: number | null;
+  discard_bao: BaoCounts;
+  self_pick_bao: BaoCounts;
+}
+
+export interface WinTypeStats {
+  table_draw_rate: number | null;
+  players: WinTypeRow[];
+}

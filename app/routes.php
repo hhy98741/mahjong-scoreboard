@@ -591,6 +591,18 @@ $router->get('/api/stats/seats', function (Request $request) use ($config, $pars
     Response::json((new StatsRepo(Db::connect($config)))->seats($parseStatsFilters($request)));
 });
 
+$router->get('/api/stats/records', function (Request $request) use ($config, $parseStatsFilters): void {
+    Response::json((new StatsRepo(Db::connect($config)))->records($parseStatsFilters($request)));
+});
+
+$router->get('/api/stats/feeders', function (Request $request) use ($config, $parseStatsFilters): void {
+    Response::json((new StatsRepo(Db::connect($config)))->feeders($parseStatsFilters($request)));
+});
+
+$router->get('/api/stats/win-types', function (Request $request) use ($config, $parseStatsFilters): void {
+    Response::json((new StatsRepo(Db::connect($config)))->winTypes($parseStatsFilters($request)));
+});
+
 $router->get('/api/stats/games/{id}/curve', function (Request $request, string $id) use ($config): void {
     $payload = (new StatsRepo(Db::connect($config)))->gameCurve((int) $id);
     if ($payload === null) {

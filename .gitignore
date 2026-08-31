@@ -39,6 +39,10 @@ npm-debug.log*
 yarn-error.log*
 bun-debug.log*
 
+# ---------------------------------------------------------------- Playwright
+.playwright/
+.playwright-cli/
+
 # ---------------------------------------------------------------- macOS
 .DS_Store
 .DS_Store?

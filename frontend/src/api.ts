@@ -3,6 +3,8 @@
 // they never patch it locally (docs/04-frontend.md § State discipline).
 
 import type {
+  FeederStats,
+  FlowMatrix,
   GameCreateRequest,
   GameCurve,
   GameStatePayload,
@@ -14,10 +16,13 @@ import type {
   PlayerCreateRequest,
   PlayerStats,
   PlayerUpdateRequest,
+  RecordsBoard,
   Ruleset,
   RulesetRequest,
+  SeatLuckRow,
   StatsFilters,
   User,
+  WinTypeStats,
 } from './types.ts';
 
 export class ApiError extends Error {
@@ -160,5 +165,10 @@ export const api = {
 
   leaderboard: (filters?: StatsFilters): Promise<LeaderboardRow[]> => request('GET', `/api/stats/leaderboard${statsQuery(filters)}`),
   playerStats: (id: number, filters?: StatsFilters): Promise<PlayerStats> => request('GET', `/api/stats/players/${id}${statsQuery(filters)}`),
+  flow: (filters?: StatsFilters): Promise<FlowMatrix> => request('GET', `/api/stats/flow${statsQuery(filters)}`),
+  seats: (filters?: StatsFilters): Promise<SeatLuckRow[]> => request('GET', `/api/stats/seats${statsQuery(filters)}`),
+  records: (filters?: StatsFilters): Promise<RecordsBoard> => request('GET', `/api/stats/records${statsQuery(filters)}`),
+  feeders: (filters?: StatsFilters): Promise<FeederStats> => request('GET', `/api/stats/feeders${statsQuery(filters)}`),
+  winTypes: (filters?: StatsFilters): Promise<WinTypeStats> => request('GET', `/api/stats/win-types${statsQuery(filters)}`),
   gameCurve: (gameId: number): Promise<GameCurve> => request('GET', `/api/stats/games/${gameId}/curve`),
 };

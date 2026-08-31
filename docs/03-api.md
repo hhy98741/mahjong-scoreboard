@@ -330,17 +330,229 @@ excluded and `in_progress` and `completed` games are included.
 |---|---|
 | `GET /api/stats/leaderboard` | Per player: net points, games, hands played/won, win rate, self-pick rate, biggest hand, average faan. |
 | `GET /api/stats/players/{id}` | The above plus a cumulative points-over-time series and a faan histogram. |
-| `GET /api/stats/flow` | `N×N` matrix of net points transferred from player A to player B, over the players in scope. |
-| `GET /api/stats/seats` | Net points and win rate grouped by the wind actually held when the hand was played, `(chair - dealer_wind_index + 4) % 4` — does East really win more? At `N<4` some winds never occur; return only the winds that do. |
+| `GET /api/stats/flow` | `N×N` matrix of net points transferred from player A to player B, over the players in scope. See payload below. |
+| `GET /api/stats/seats` | Net points and win rate grouped by the wind actually held when the hand was played, `(chair - dealer_wind_index + 4) % 4` — does East really win more? At `N<4` some winds never occur; return only the winds that do. See payload below. |
 | `GET /api/stats/games/{id}/curve` | Per-hand cumulative totals for one game, for the replay chart. |
+| `GET /api/stats/records` | A board of superlatives — streaks and records (`06-history-reports.md` #7). Each one links to the game (and, where relevant, the specific hand) it came from. See payload below. |
+| `GET /api/stats/feeders` | Per player, as the **discarder**: hands dealt into, points paid as discarder, and discard rate vs. the table average (`06-history-reports.md` #8). See payload below. |
+| `GET /api/stats/win-types` | Per player, self-pick vs discard as a share of their wins, plus a table-wide draw rate and 包 (bao) incidents broken out by win type (`06-history-reports.md` #9). See payload below. |
 
 Compute these in SQL against `hand_scores` and `hands`. They are read-only and cheap;
 do not cache.
 
-**These five cover Tier 1 and the two Tier 2 reports that need bespoke shapes.** The rest of
-`06-history-reports.md` — streaks and records (#7), feeder stats (#8), the win-type split
-(#9), session summary (#10), head-to-head (#11), and `GET /api/stats/export.csv` (#13) —
-has **no endpoint specified yet**, deliberately. They are Phase 10, they depend on nothing
-else, and they are easier to shape once there are real games to look at. Add them to this
-table as they are built, keeping the same four filters and the same `player_count=4`
-default (D25).
+### `GET /api/stats/flow` — the points flow matrix (`06-history-reports.md` #5)
+
+```json
+{ "ok": true, "data": {
+  "players": [
+    { "id": 12, "name": "Ann", "color": "#b91c1c", "avatar_url": "/avatars/12-9f3a2b71.webp" },
+    { "id": 7,  "name": "Ben", "color": "#1d4ed8", "avatar_url": "/default.svg" }
+  ],
+  "matrix": [
+    [0, 96],
+    [32, 0]
+  ]
+} }
+```
+
+`players` lists every player who appears on either side of at least one attributed
+transfer within scope, ordered by `id` ascending — a player who only drew or sat out
+never appears, even if seated in a scoped game. `matrix` is square with the same length
+and order as `players`; `matrix[i][j]` is the total net points `players[i]` paid to
+`players[j]` across the range (always `>= 0`), and the diagonal is always `0`.
+
+Attribution, per `06-history-reports.md` #5: for each `win` hand, every loser's negative
+delta is attributed to the winner (`matrix[loser][winner] += -delta`); for a `penalty`,
+the offender's loss is attributed to each recipient (`matrix[offender][recipient] +=
+delta`); `draw` hands contribute nothing. This is a strict subset of the deltas
+`GET /api/stats/leaderboard` sums — draws are always zero-sum anyway — so for every
+player in scope, `SUM(matrix[j][player]) - SUM(matrix[player][j])` (received minus paid,
+summed over the other axis) equals that player's `net_points` for the same filters, and
+the two figures are asserted to tie out in `tests/StatsRepoTest.php`.
+
+`?player_ids=` restricts to transfers where **both** payer and receiver are in the list;
+a transfer with only one side named is dropped rather than attributed to a player outside
+the filter — including it would break the reconciliation above for the players who are in
+scope. `?player_count` still defaults to `4` (D25): a flow matrix blended across player
+counts is exactly the kind of average `06-history-reports.md` § "Player count is a
+first-class filter" warns against, so treat `?player_count=all` as a deliberate,
+non-default choice here too.
+
+### `GET /api/stats/seats` — seat luck (`06-history-reports.md` #6)
+
+```json
+{ "ok": true, "data": [
+  { "wind_index": 0, "wind_name": "East",  "hands": 412, "net_points": -1240, "hands_won": 148, "win_rate": 0.3592 },
+  { "wind_index": 1, "wind_name": "South", "hands": 401, "net_points": 380,   "hands_won": 96,  "win_rate": 0.2394 },
+  { "wind_index": 2, "wind_name": "West",  "hands": 398, "net_points": 512,   "hands_won": 88,  "win_rate": 0.2211 },
+  { "wind_index": 3, "wind_name": "North", "hands": 405, "net_points": 348,   "hands_won": 84,  "win_rate": 0.2074 }
+] }
+```
+
+A flat list, one row per wind actually held, `wind_index` ascending; `wind_name` is the
+English name only (`06-history-reports.md` reports return enums, not display strings —
+`07-terminology.md` covers translating `wind_index` in the UI, same as everywhere else
+`wind_index` appears). Aggregated across every seated player and every hand in scope, not
+per player — `?player_ids=` narrows which players' hands count, it does not return one row
+per player. `hands` is the number of hands played while holding that wind; `net_points` is
+the sum of `points_delta` for those hand/player rows (can be negative); `win_rate` is
+`hands_won / hands`, or `null` if `hands` is `0` (never emitted — see below).
+
+`wind_index` is the wind **actually held**, `(chair - dealer_wind_index + 4) % 4`, not the
+player's starting chair — it rotates with the deal like everywhere else in this app. At
+`player_count < 4` at least one wind never occurs (a 2-player game only ever holds two of
+the four), so only winds with `hands > 0` are returned; the frontend must not assume four
+rows. The player holding wind_index `0` is always the hand's dealer (East rotates with the
+deal, and dealing is what defines East), so that row's `win_rate` **is** the dealer win
+rate — no separate field, per `06-history-reports.md` #6's "break out dealer win rate
+separately": the UI calls that row out rather than the API duplicating it.
+
+### `GET /api/stats/records` — streaks and records (`06-history-reports.md` #7)
+
+```json
+{ "ok": true, "data": {
+  "biggest_hand_points": { "player": { "id": 12, "name": "Ann", "color": "#b91c1c", "avatar_url": "/default.svg" }, "game_id": 42, "hand_id": 501, "points": 384 },
+  "biggest_hand_faan":   { "player": { "id": 12, "name": "Ann", "color": "#b91c1c", "avatar_url": "/default.svg" }, "game_id": 40, "hand_id": 480, "faan": 10 },
+  "longest_win_streak":  { "player": { "id": 7,  "name": "Ben", "color": "#1d4ed8", "avatar_url": "/default.svg" }, "game_id": 42, "hand_id": 508, "length": 5 },
+  "longest_drought":     { "player": { "id": 9,  "name": "Cal", "color": "#15803d", "avatar_url": "/default.svg" }, "game_id": 37, "hand_id": 190, "length": 14 },
+  "biggest_comeback":    { "player": { "id": 12, "name": "Ann", "color": "#b91c1c", "avatar_url": "/default.svg" }, "game_id": 42, "hand_id": 503, "deficit": 220 },
+  "most_dealer_defences":{ "player": { "id": 7,  "name": "Ben", "color": "#1d4ed8", "avatar_url": "/default.svg" }, "game_id": 42, "hand_id": 497, "defences": 4 },
+  "best_night":  { "player": { "id": 12, "name": "Ann", "color": "#b91c1c", "avatar_url": "/default.svg" }, "date": "2026-03-05", "net_points": 640, "game_ids": [40, 41, 42] },
+  "worst_night": { "player": { "id": 9,  "name": "Cal", "color": "#15803d", "avatar_url": "/default.svg" }, "date": "2026-02-14", "net_points": -410, "game_ids": [38] }
+} }
+```
+
+Eight fixed keys, always present; any single one is `null` when scope has no qualifying
+data (e.g. no game in range ever had a lead change, so `biggest_comeback` is `null` even
+though other keys are populated). Every non-null entry carries `player` (the record
+holder) and `game_id`; entries that pin down one specific hand also carry `hand_id` — the
+frontend links to `#/history/game/{game_id}`, the same target `leaderboard.best_hand`
+already uses, since hand history renders on that page (there is no standalone per-hand
+route). `?player_ids=` narrows the players considered throughout, same as `/seats`: a game
+with only one of its seated players in scope can still set `biggest_hand_points` etc., but
+never `biggest_comeback` (a comeback needs an opponent to be behind).
+
+- **`biggest_hand_points` / `biggest_hand_faan`** — the single `outcome='win'` hand with
+  the largest winner's `points_delta`, and separately the largest `faan`, each with its own
+  tie-break (earliest `hand_id` first).
+- **`longest_win_streak` / `longest_drought`** — scoped to **one game each**; a streak or
+  drought never spans two games, because the deal and the hand sequence both reset at
+  `hand_number = 1`. Symmetric definition: a hand a player wins zeroes their drought and
+  extends their streak; any other hand in that game (someone else's win, a draw, or a
+  penalty) zeroes their streak and extends their drought. `length` is hands; `hand_id` is
+  the run's last hand.
+- **`most_dealer_defences`** — the longest run of consecutive hands within one game sharing
+  the same `dealer_wind_index`, regardless of outcome (a draw or a penalty keeps the same
+  dealer per `02-scoring-engine.md`). `defences` is the run length minus one — the hand that
+  first won the deal is not itself a defence — and `hand_id` is the run's last hand.
+- **`biggest_comeback`** — per game, take its real winner(s) by final net points (ties count
+  individually), then walk the same per-hand running totals `GET /api/stats/games/{id}/curve`
+  exposes and find the largest gap between the eventual winner and whichever opponent was
+  ahead at that moment. `deficit` is that gap in points; `hand_id` is the hand after which
+  it peaked. The single largest gap across every game in scope wins.
+- **`best_night` / `worst_night`** — group every game in scope by the calendar date of
+  `games.started_at`, sum `points_delta` per player across that date's games, and report the
+  single highest and lowest player/date totals. `game_ids` lists every game that date the
+  player was seated in, oldest first — there is no separate route per game-night (that is
+  Tier 3 #10), so this is the whole night's context in one array.
+
+### `GET /api/stats/feeders` — feeder stats (`06-history-reports.md` #8)
+
+```json
+{ "ok": true, "data": {
+  "table_avg_discard_rate": 0.0823,
+  "players": [
+    { "player": { "id": 12, "name": "Ann", "color": "#b91c1c", "avatar_url": "/default.svg" },
+      "hands": 412, "discards": 34, "points_paid": 512,
+      "discard_rate": 0.0825, "vs_table_avg": 0.0002 },
+    { "player": { "id": 7,  "name": "Ben", "color": "#1d4ed8", "avatar_url": "/default.svg" },
+      "hands": 405, "discards": 41, "points_paid": 688,
+      "discard_rate": 0.1012, "vs_table_avg": 0.0189 }
+] } }
+```
+
+The complement of the win stats (`06-history-reports.md` #8): for each player, **as the
+discarder** — how often they dealt into someone else's win, and how many points that cost
+them, versus the table's overall rate. One row per player who was seated on at least one
+hand in scope. `?player_ids=` narrows the population itself — same convention as `/seats`,
+different from `/records`: a player left out of the filter contributes no hands and no
+discards to anyone's numbers, including `table_avg_discard_rate`, rather than still
+counting in the background.
+
+- **`hands`** — hands the player was seated for in scope (the same denominator
+  `leaderboard`'s `hands` column uses).
+- **`discards`** — hands in scope where this player is `hands.discarder_player_id` on an
+  `outcome='win'` `win_type='discard'` hand. A bao discard (`liable_player_id =
+  discarder_player_id`, rule 16) still counts as one dealt-into hand here — bao changes who
+  pays, not who dealt.
+- **`points_paid`** — the sum of this player's own `points_delta` across exactly those
+  hands, negated so it reads as a positive amount paid (`>= 0`); on a plain discard win
+  that is this player's discarder share, on a bao discard the whole hand.
+- **`discard_rate`** — `discards / hands`, or `null` if `hands` is `0`.
+- **`vs_table_avg`** — `discard_rate - table_avg_discard_rate`, or `null` if either side is
+  `null`. Positive means this player feeds more often than the table as a whole.
+- **`table_avg_discard_rate`** (top-level) — `SUM(discards) / SUM(hands)` over every row
+  returned, i.e. the same population `?player_ids=` and the other filters have already
+  narrowed to. `null` when every returned row has `hands = 0` (an empty range).
+
+Rows are ordered by `discard_rate` descending (`null` last), ties broken by `discards`
+descending then `player.id` ascending — the frontend may re-sort by any column, same as the
+leaderboard.
+
+### `GET /api/stats/win-types` — win-type split (`06-history-reports.md` #9)
+
+```json
+{ "ok": true, "data": {
+  "table_draw_rate": 0.0421,
+  "players": [
+    { "player": { "id": 12, "name": "Ann", "color": "#b91c1c", "avatar_url": "/default.svg" },
+      "hands": 412, "wins": 42, "self_pick_wins": 14, "discard_wins": 28,
+      "self_pick_win_share": 0.3333,
+      "discard_bao": { "liable": 3, "won": 5 },
+      "self_pick_bao": { "liable": 2, "won": 1 } },
+    { "player": { "id": 7,  "name": "Ben", "color": "#1d4ed8", "avatar_url": "/default.svg" },
+      "hands": 405, "wins": 38, "self_pick_wins": 6, "discard_wins": 32,
+      "self_pick_win_share": 0.1579,
+      "discard_bao": { "liable": 1, "won": 2 },
+      "self_pick_bao": { "liable": 0, "won": 0 } }
+] } }
+```
+
+Self-pick vs discard as a share of each player's wins (`06-history-reports.md` #9), plus a
+table-wide draw rate and 包 (bao) incidents. Bao is broken out by the win type it occurred
+on rather than blended into one count — a discard bao is always the discarder's own doing
+(rule 16: `liable_player_id = discarder_player_id`), while a self-pick bao names a *different*
+player who was already on the hook before the hand ended (rule 5b: `liable_player_id !=
+winner_player_id`); merging the two would hide the more interesting of the pair. One row per
+player who was seated on at least one hand in scope. `?player_ids=` narrows the population
+itself, same convention as `/seats` and `/feeders` — a player left out contributes nothing to
+anyone's counts, including `table_draw_rate`'s denominator; unlike `/flow`, the two roles in a
+bao pairing (who's liable, who won) are narrowed independently, not as a matched pair, since
+each is reported as that one player's own count, not a transfer between two named players.
+
+- **`table_draw_rate`** (top-level) — `draws / hands` over every hand in scope (the scope
+  filters only — `from`/`to`/`player_count`/`include_abandoned` — never `?player_ids=`: a draw
+  belongs to the whole table, not to any subset of players). `null` when scope has zero hands.
+- **`hands`** — hands the player was seated for in scope (the same denominator `leaderboard`
+  and `feeders` use).
+- **`wins`** — `self_pick_wins + discard_wins`.
+- **`self_pick_wins` / `discard_wins`** — this player's `outcome='win'` hands, split by
+  `win_type`.
+- **`self_pick_win_share`** — `self_pick_wins / wins`, or `null` if `wins` is `0`.
+- **`discard_bao`** — `{ liable, won }` over hands where `win_type='discard'` and
+  `liable_player_id` is set. `liable` counts hands where this player is the (always-liable)
+  discarder; `won` counts hands where this player is the winner who benefited.
+- **`self_pick_bao`** — `{ liable, won }` over hands where `win_type='self_pick'` and
+  `liable_player_id` is set. `liable` counts hands where this player is the named liable
+  player; `won` counts hands where this player is the self-pick winner who benefited.
+
+Rows are ordered by `self_pick_win_share` descending (`null` last), ties broken by `wins`
+descending then `player.id` ascending — the frontend may re-sort by any column, same as the
+leaderboard.
+
+**These eight cover Tier 1 and five Tier 2 reports that need bespoke shapes.** The rest of
+`06-history-reports.md` — session summary (#10), head-to-head (#11), and
+`GET /api/stats/export.csv` (#13) — has **no endpoint specified yet**, deliberately. They
+depend on nothing else, and they are easier to shape once there are real games to look at.
+Add them to this table as they are built, keeping the same four filters and the same
+`player_count=4` default (D25).
