@@ -91,6 +91,6 @@ Desktop.ini
 .directory
 
 # ---------------------------------------------------------------- scratch notes
-# Working notes only. The source material the specs cite lives in docs/reference/
-# and IS tracked.
+# Working notes only. The source material the archived specs cite lives in
+# docs-initial-build/reference/ and IS tracked.
 scratchpad/

@@ -1,5 +1,5 @@
-// Mirrors the API payloads in docs/03-api.md. The API returns raw enum
-// values only (docs/07-terminology.md § Backend) — translation happens here
+// Mirrors the API payloads in docs-initial-build/03-api.md. The API returns raw enum
+// values only (docs-initial-build/07-terminology.md § Backend) — translation happens here
 // in the frontend, never on the wire.
 
 export type GameStatus = 'in_progress' | 'completed' | 'abandoned';
@@ -99,7 +99,7 @@ export interface Hand {
 
 // GET /api/games/{id}, GET /api/games/current, and every write on a game —
 // the frontend replaces its whole store with this on every response
-// (docs/04-frontend.md § State discipline). Never patch it locally.
+// (docs-initial-build/04-frontend.md § State discipline). Never patch it locally.
 export interface GameStatePayload {
   game: GameInfo;
   ruleset: RulesetSnapshot;
@@ -126,7 +126,7 @@ export interface GameSummary {
 }
 
 // POST /api/games/{id}/hands — three body shapes discriminated by outcome
-// (docs/03-api.md § POST /api/games/{id}/hands).
+// (docs-initial-build/03-api.md § POST /api/games/{id}/hands).
 export type HandRequest =
   | {
       outcome: 'win';
@@ -140,7 +140,7 @@ export type HandRequest =
   | { outcome: 'draw'; note: string | null }
   | { outcome: 'penalty'; offender_player_id: number; penalty_per_player: number; note: string | null };
 
-// POST /api/games — docs/03-api.md § Games. `seats` names the wind each
+// POST /api/games — docs-initial-build/03-api.md § Games. `seats` names the wind each
 // player starts at; wind 0 (East) must be present.
 export interface GameCreateRequest {
   ruleset_id: number;
@@ -151,7 +151,7 @@ export interface GameCreateRequest {
   seats: { wind: number; player_id: number }[];
 }
 
-// POST/PATCH /api/players — docs/03-api.md § Players.
+// POST/PATCH /api/players — docs-initial-build/03-api.md § Players.
 export interface PlayerCreateRequest {
   name: string;
   color?: string;
@@ -163,7 +163,7 @@ export interface PlayerUpdateRequest {
   is_active?: boolean;
 }
 
-// POST/PUT /api/rulesets — docs/03-api.md § Rulesets. `points` must carry a
+// POST/PUT /api/rulesets — docs-initial-build/03-api.md § Rulesets. `points` must carry a
 // row for every faan 0..table_max_faan.
 export interface RulesetRequest {
   name: string;
@@ -173,7 +173,7 @@ export interface RulesetRequest {
 }
 
 // ---------------------------------------------------------------- stats
-// GET /api/stats/* — docs/03-api.md § Stats, backing docs/06-history-reports.md.
+// GET /api/stats/* — docs-initial-build/03-api.md § Stats, backing docs-initial-build/06-history-reports.md.
 
 // Shared filter shape every stats endpoint accepts. player_count defaults to
 // 4 (D25) — the frontend must always show which count is in effect.
@@ -231,8 +231,8 @@ export interface GameCurve {
   round_boundaries: number[];
 }
 
-// GET /api/stats/flow — docs/03-api.md § GET /api/stats/flow, backing
-// docs/06-history-reports.md #5. `players` only lists players who appear on
+// GET /api/stats/flow — docs-initial-build/03-api.md § GET /api/stats/flow, backing
+// docs-initial-build/06-history-reports.md #5. `players` only lists players who appear on
 // either side of at least one attributed transfer, ordered by id ascending.
 // `matrix[i][j]` is the total net points `players[i]` paid to `players[j]`
 // (always >= 0); the diagonal is always 0.
@@ -241,8 +241,8 @@ export interface FlowMatrix {
   matrix: number[][];
 }
 
-// GET /api/stats/seats — docs/03-api.md § GET /api/stats/seats, backing
-// docs/06-history-reports.md #6. One row per wind actually held (ascending
+// GET /api/stats/seats — docs-initial-build/03-api.md § GET /api/stats/seats, backing
+// docs-initial-build/06-history-reports.md #6. One row per wind actually held (ascending
 // by wind_index); at player_count < 4 not all four winds occur, so only
 // winds with hands > 0 are present. wind_index 0 is always the dealer, so
 // that row's win_rate doubles as the dealer win rate.
@@ -255,8 +255,8 @@ export interface SeatLuckRow {
   win_rate: number | null;
 }
 
-// GET /api/stats/records — docs/03-api.md § GET /api/stats/records, backing
-// docs/06-history-reports.md #7. Eight fixed keys, each null when scope has
+// GET /api/stats/records — docs-initial-build/03-api.md § GET /api/stats/records, backing
+// docs-initial-build/06-history-reports.md #7. Eight fixed keys, each null when scope has
 // no qualifying data. Every entry links to `game_id` (the frontend routes to
 // `#/history/game/{game_id}`, same target as leaderboard.best_hand — there
 // is no standalone per-hand route); hand-specific entries also carry
@@ -285,8 +285,8 @@ export interface RecordsBoard {
   worst_night: NightRecord | null;
 }
 
-// GET /api/stats/feeders — docs/03-api.md § GET /api/stats/feeders, backing
-// docs/06-history-reports.md #8. Per player, as the discarder: hands dealt
+// GET /api/stats/feeders — docs-initial-build/03-api.md § GET /api/stats/feeders, backing
+// docs-initial-build/06-history-reports.md #8. Per player, as the discarder: hands dealt
 // into, points paid, and discard rate vs. the table average. Rows are
 // ordered by discard_rate descending (null last).
 export interface FeederRow {
@@ -303,8 +303,8 @@ export interface FeederStats {
   players: FeederRow[];
 }
 
-// GET /api/stats/win-types — docs/03-api.md § GET /api/stats/win-types,
-// backing docs/06-history-reports.md #9. Bao stays split by win type: a
+// GET /api/stats/win-types — docs-initial-build/03-api.md § GET /api/stats/win-types,
+// backing docs-initial-build/06-history-reports.md #9. Bao stays split by win type: a
 // discard bao always names the discarder as liable (rule 16), a self-pick
 // bao names a different, already-on-the-hook player (rule 5b) — merging the
 // two would hide the more interesting number. Rows ordered by

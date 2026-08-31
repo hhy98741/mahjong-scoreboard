@@ -10,7 +10,7 @@ use App\Domain\Scoring;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Part 1 (payment math) vectors from docs/02-scoring-engine.md § Part 4.
+ * Part 1 (payment math) vectors from docs-initial-build/02-scoring-engine.md § Part 4.
  *
  * P4 is deliberately retired (now rejection V11) — do not reinstate it.
  */
@@ -277,7 +277,7 @@ final class ScoringTest extends TestCase
 
     public function testV12SelfPickBaoWithoutALiablePlayerHasNoDomainRepresentation(): void
     {
-        // Per docs/04-frontend.md ("a self-pick bao can never be recorded with nobody
+        // Per docs-initial-build/04-frontend.md ("a self-pick bao can never be recorded with nobody
         // liable") this is a UI-only constraint: the entry bar disables Record until a
         // liable player is named. The API request shape has no separate "bao intended"
         // flag for self_pick (unlike discard's optional bao:true) — liable_player_id

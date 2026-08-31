@@ -1,4 +1,4 @@
-// Inline SVG per docs/04-frontend.md § Seating diamond. Chairs are fixed;
+// Inline SVG per docs-initial-build/04-frontend.md § Seating diamond. Chairs are fixed;
 // the wind glyph shown at each chair is its CURRENT wind and rotates with
 // the deal. All four winds always render, including at empty chairs — never
 // derive which sides are empty from player_count, read it from seats[].chair.
@@ -19,7 +19,7 @@ interface SeatingDiamondProps {
 type Chair = 0 | 1 | 2 | 3;
 const CHAIRS: readonly Chair[] = [0, 1, 2, 3];
 
-// Exact coordinates from docs/04-frontend.md § Seating diamond.
+// Exact coordinates from docs-initial-build/04-frontend.md § Seating diamond.
 const WIND_LABEL_POS: Record<Chair, readonly [number, number]> = {
   0: [155, 155],
   1: [155, 245],

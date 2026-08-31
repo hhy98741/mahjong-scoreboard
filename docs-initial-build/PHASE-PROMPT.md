@@ -3,7 +3,7 @@
 One ready-to-paste prompt per build session, in order. Start a fresh session (or `/clear`),
 paste the next block, let it run to the end of that phase, review, commit, repeat.
 
-**This file is scaffolding for the build, not a spec.** `docs/PLAN.md` is the authority on
+**This file is scaffolding for the build, not a spec.** `PLAN.md` is the authority on
 what each phase contains; these are just the prompts that start them.
 
 ## Before the first session
@@ -33,10 +33,10 @@ Both are deliberate. Left alone, a model rolls into the next phase on momentum, 
 ## Phase 0 — Scaffold
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
 Implement Phase 0 only. Read the specs it lists first — including
-docs/04-frontend.md § Setup, which overrides anything you may expect about
+04-frontend.md § Setup, which overrides anything you may expect about
 scaffolding a Vite project. There is ONE package.json, at the repo root; do not
 run `bun create vite frontend`.
 
@@ -56,9 +56,9 @@ Do not start Phase 1.
 ## Phase 1 — Schema
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Implement Phase 1 only. Read docs/01-data-model.md first.
+Implement Phase 1 only. Read 01-data-model.md first.
 
 Schema goes in migrations/, seed data goes in bin/seed.php, and never the
 reverse.
@@ -75,9 +75,9 @@ Do not start Phase 2.
 ## Phase 2 — Auth
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Implement Phase 2 only. Read docs/03-api.md § Auth first.
+Implement Phase 2 only. Read 03-api.md § Auth first.
 
 When done, run each check in the "Done when" list and paste the real output.
 The rate-limit check matters: six wrong passwords must return 429 while a
@@ -94,9 +94,9 @@ Do not start Phase 3.
 ## Phase 3 — Scoring engine
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Implement Phase 3 only. Read all of docs/02-scoring-engine.md first.
+Implement Phase 3 only. Read all of 02-scoring-engine.md first.
 
 This phase is tests-first, and I mean it literally:
 
@@ -130,14 +130,14 @@ Do not start Phase 4.
 ## Phase 4 — Players & rulesets API
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Implement Phase 4 only. Read docs/03-api.md §§ Players, Rulesets and
-docs/01-data-model.md first.
+Implement Phase 4 only. Read 03-api.md §§ Players, Rulesets and
+01-data-model.md first.
 
 The avatar upload is the only untrusted input that lands on disk. The finfo
 check and the GD re-encode are not optional, and the multipart CSRF carve-out
-in docs/03-api.md § Auth applies to exactly one route.
+in 03-api.md § Auth applies to exactly one route.
 
 When done, run each check in the "Done when" list and paste the real output,
 including the evil.php.jpg rejection and a /default.svg that actually resolves.
@@ -150,13 +150,13 @@ Do not start Phase 5.
 ## Phase 5 — Games API
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Implement Phase 5 only. Read docs/03-api.md § Games and docs/02-scoring-engine.md
+Implement Phase 5 only. Read 03-api.md § Games and 02-scoring-engine.md
 first.
 
 Never trust client-supplied round or dealer state — replay for it. Follow the
-eight-step transaction in docs/03-api.md exactly.
+eight-step transaction in 03-api.md exactly.
 
 The integration test must run at N=4, N=3, and N=2, and the N=2 run must use a
 non-default seat pair (East+South) so a hardcoded 4 cannot pass.
@@ -177,7 +177,7 @@ Do not start Phase 6.
 ### Phase 5, continued — only if you had to stop partway
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
 Phase 5 is partly built. Review what already exists in app/Repo/ and the games
 routes, then finish Phase 5 — the remaining routes, the integration test at all
@@ -192,7 +192,7 @@ Do not start Phase 6.
 
 ## Phase 6a — Scoreboard, read-only
 
-> Splitting Phase 6 is a deviation from `docs/PLAN.md`, which treats it as one phase. It is
+> Splitting Phase 6 is a deviation from `PLAN.md`, which treats it as one phase. It is
 > by far the largest — router, api client, store, login, tokens, i18n, the SVG diamond,
 > standings, hand history, the entire entry bar, and the keyboard scheme. Two sessions.
 >
@@ -200,10 +200,10 @@ Do not start Phase 6.
 > which is a real checkpoint rather than an arbitrary halfway mark.
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Implement the first half of Phase 6 only. Read all of docs/04-frontend.md and
-docs/07-terminology.md first.
+Implement the first half of Phase 6 only. Read all of 04-frontend.md and
+07-terminology.md first.
 
 In scope: router, api.ts, store.ts, types.ts, login screen, session bootstrap,
 Home.tsx, styles/tokens.css, i18n/terms.ts and the t() helper with the language
@@ -228,9 +228,9 @@ Do not build the entry bar.
 ## Phase 6b — Entry bar & keyboard
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Finish Phase 6. Re-read docs/04-frontend.md §§ Entry area, Keyboard shortcuts.
+Finish Phase 6. Re-read 04-frontend.md §§ Entry area, Keyboard shortcuts.
 
 Build EntryBar.tsx, FaanPicker.tsx, PlayerPicker.tsx, Confirm.tsx, the penalty
 modal, undo with confirmation, the keyboard scheme with its ? overlay, and the
@@ -255,9 +255,9 @@ Do not start Phase 7.
 ## Phase 7 — New game & setup UI
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Implement Phase 7 only. Read docs/04-frontend.md §§ Routes, Setup first.
+Implement Phase 7 only. Read 04-frontend.md §§ Routes, Setup first.
 
 All four wind rows always show, whatever the player count. East is required and
 cannot be emptied. Pre-fill the defaults but never enforce them — East+North must
@@ -274,10 +274,10 @@ Do not start Phase 8.
 ## Phase 8 — History & Tier 1 reports
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Implement Phase 8 only. Read docs/06-history-reports.md Tier 1 and
-docs/03-api.md § Stats first.
+Implement Phase 8 only. Read 06-history-reports.md Tier 1 and
+03-api.md § Stats first.
 
 Rank by net points within a game, by rate across games. The leaderboard sorts by
 game win % with points-per-hand adjacent and Games always visible.
@@ -302,9 +302,9 @@ Do not start Phase 9.
 > Fill in `deploy/deploy.conf` before you start — all four keys are currently blank.
 
 ```
-Read CLAUDE.md, then docs/PLAN.md.
+Read CLAUDE.md, then PLAN.md.
 
-Implement Phase 9 only. Read all of docs/05-deployment.md first, including the
+Implement Phase 9 only. Read all of 05-deployment.md first, including the
 --delete warning, before writing any sync command.
 
 Write deploy/remote/.htaccess, deploy/deploy.sh, deploy/migrate.sh and
@@ -335,10 +335,10 @@ the work, so the contract does not drift from the code.
 ### Points flow matrix
 
 ```
-Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #5.
+Read CLAUDE.md, then PLAN.md, then 06-history-reports.md report #5.
 
 Build the points flow matrix. GET /api/stats/flow is already named in
-docs/03-api.md § Stats but not specified — design its payload, add it to that
+03-api.md § Stats but not specified — design its payload, add it to that
 table, then implement StatsRepo and the UI.
 
 It takes the same four filters as every stats endpoint, with player_count
@@ -352,9 +352,9 @@ Stop when this one report works. Do not build the other Tier 2 reports.
 ### Seat luck
 
 ```
-Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #6.
+Read CLAUDE.md, then PLAN.md, then 06-history-reports.md report #6.
 
-Build seat luck. GET /api/stats/seats is named in docs/03-api.md § Stats but not
+Build seat luck. GET /api/stats/seats is named in 03-api.md § Stats but not
 specified — design its payload, add it to that table, then implement.
 
 Group by the wind actually HELD when the hand was played, not by chair. At fewer
@@ -367,10 +367,10 @@ Stop when this one report works.
 ### Streaks and records
 
 ```
-Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #7.
+Read CLAUDE.md, then PLAN.md, then 06-history-reports.md report #7.
 
 Build the streaks and records board. There is no endpoint for this yet — design
-one, add it to the docs/03-api.md § Stats table, then implement.
+one, add it to the 03-api.md § Stats table, then implement.
 
 Each superlative links to the hand or game it came from.
 
@@ -380,10 +380,10 @@ Stop when this one report works.
 ### Feeder stats
 
 ```
-Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #8.
+Read CLAUDE.md, then PLAN.md, then 06-history-reports.md report #8.
 
 Build feeder stats. There is no endpoint for this yet — design one, add it to the
-docs/03-api.md § Stats table, then implement.
+03-api.md § Stats table, then implement.
 
 Stop when this one report works.
 ```
@@ -391,10 +391,10 @@ Stop when this one report works.
 ### Win-type split
 
 ```
-Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #9.
+Read CLAUDE.md, then PLAN.md, then 06-history-reports.md report #9.
 
 Build the win-type split. There is no endpoint for this yet — design one, add it
-to the docs/03-api.md § Stats table, then implement.
+to the 03-api.md § Stats table, then implement.
 
 Break the 包 counts out by win type rather than blending them — a discard bao is
 always the discarder's doing, a self-pick bao names someone already on the hook,
@@ -414,10 +414,10 @@ an appetite for more.
 ### Session summary
 
 ```
-Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #10.
+Read CLAUDE.md, then PLAN.md, then 06-history-reports.md report #10.
 
 Build the session summary. There is no endpoint for this yet — design one, add
-it to the docs/03-api.md § Stats table, then implement.
+it to the 03-api.md § Stats table, then implement.
 
 A "night" is games grouped by calendar date, not by a session id — there is no
 such table. Group in SQL or PHP, whichever reads clearer.
@@ -428,10 +428,10 @@ Stop when this one report works.
 ### Head-to-head
 
 ```
-Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #11.
+Read CLAUDE.md, then PLAN.md, then 06-history-reports.md report #11.
 
 Build head-to-head. There is no endpoint for this yet — design one, add it to
-the docs/03-api.md § Stats table, then implement.
+the 03-api.md § Stats table, then implement.
 
 Takes exactly two player ids. Hands played together means both were seated in
 the same game, not necessarily both in the same hand's outcome.
@@ -442,10 +442,10 @@ Stop when this one report works.
 ### Activity heatmap
 
 ```
-Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #12.
+Read CLAUDE.md, then PLAN.md, then 06-history-reports.md report #12.
 
 Build the activity heatmap. There is no endpoint for this yet — design one, add
-it to the docs/03-api.md § Stats table, then implement.
+it to the 03-api.md § Stats table, then implement.
 
 Purely decorative — a calendar grid of days played. Keep the query cheap; this
 one has no reason to be expensive.
@@ -456,10 +456,10 @@ Stop when this one report works.
 ### Export
 
 ```
-Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #13.
+Read CLAUDE.md, then PLAN.md, then 06-history-reports.md report #13.
 
 Build GET /api/stats/export.csv. Design its payload (a CSV, not JSON — note
-that in docs/03-api.md § Stats), add it to that table, then implement.
+that in 03-api.md § Stats), add it to that table, then implement.
 
 One row per hand_scores entry: game, date, hand number, player, outcome, faan,
 delta. This is the one Tier 3 report that's cheap and clearly worth doing even

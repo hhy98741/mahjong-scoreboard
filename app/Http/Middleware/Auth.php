@@ -9,7 +9,7 @@ use App\Http\Response;
 use App\Repo\Db;
 use App\Repo\UserRepo;
 
-// Session guard, plus the CSRF checks docs/03-api.md § Auth bundles with it:
+// Session guard, plus the CSRF checks docs-initial-build/03-api.md § Auth bundles with it:
 // a Content-Type restriction and the self-referential Origin/Host comparison
 // (D17, D17b - no configured site origin, ever). Both run on every
 // state-changing request, exempt routes included, because login itself is a
@@ -19,7 +19,7 @@ final class Auth
     private const STATE_CHANGING = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
     // The only routes that do not require a session. Keep in sync with
-    // docs/03-api.md § Auth and § Health.
+    // docs-initial-build/03-api.md § Auth and § Health.
     private const EXEMPT = [
         'GET /api/health',
         'POST /api/auth/login',
@@ -107,7 +107,7 @@ final class Auth
             || ($_SERVER['SERVER_PORT'] ?? null) === '443';
     }
 
-    // docs/03-api.md § Auth: reject a state-changing request whose Origin is
+    // docs-initial-build/03-api.md § Auth: reject a state-changing request whose Origin is
     // present and whose host does not match the request's own Host. Absent
     // Origin is a pass - non-browser clients send none, and SameSite=Lax
     // covers browsers that omit it. Host is compared host-only, case
@@ -132,7 +132,7 @@ final class Auth
         }
     }
 
-    // The only exception is multipart avatar upload (docs/03-api.md § Auth) -
+    // The only exception is multipart avatar upload (docs-initial-build/03-api.md § Auth) -
     // that route allows multipart/form-data too, and relies on the Origin
     // check above rather than this one. Do not widen this to any other route.
     private static function checkContentType(Request $request): void

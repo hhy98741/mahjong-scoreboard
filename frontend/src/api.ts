@@ -1,6 +1,6 @@
 // Typed fetch wrapper. Unwraps {ok,data}; throws ApiError on failure. Every
 // write returns the whole resource — callers replace their store wholesale,
-// they never patch it locally (docs/04-frontend.md § State discipline).
+// they never patch it locally (docs-initial-build/04-frontend.md § State discipline).
 
 import type {
   FeederStats,
@@ -88,7 +88,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return unwrap<T>(await fetch(path, init));
 }
 
-// Avatar upload is the one multipart/form-data route (docs/03-api.md §
+// Avatar upload is the one multipart/form-data route (docs-initial-build/03-api.md §
 // Auth) — the browser sets its own Content-Type with the multipart
 // boundary, so this bypasses request()'s JSON header instead of reusing it.
 async function requestForm<T>(method: string, path: string, form: FormData): Promise<T> {
@@ -105,7 +105,7 @@ function query(params?: Record<string, string | number | undefined>): string {
   return parts.length > 0 ? `?${parts.join('&')}` : '';
 }
 
-// docs/03-api.md § Stats: every stats endpoint takes the same four filters.
+// docs-initial-build/03-api.md § Stats: every stats endpoint takes the same four filters.
 // player_count is left unset here when the caller omits it - the API itself
 // defaults that to 4 (D25), so this only needs to forward an explicit choice.
 function statsQuery(filters?: StatsFilters): string {

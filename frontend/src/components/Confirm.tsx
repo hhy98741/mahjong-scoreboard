@@ -1,5 +1,5 @@
 // Generic confirmation dialog. Used by undo ("always names what it will
-// remove and confirms first" — docs/04-frontend.md § Entry area) and by
+// remove and confirms first" — docs-initial-build/04-frontend.md § Entry area) and by
 // End game.
 
 interface ConfirmProps {

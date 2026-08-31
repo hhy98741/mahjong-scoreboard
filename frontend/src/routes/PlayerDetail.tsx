@@ -1,4 +1,4 @@
-// #/history/player/:id — docs/06-history-reports.md Tier 1 #4: the
+// #/history/player/:id — docs-initial-build/06-history-reports.md Tier 1 #4: the
 // leaderboard row for one person, plus a career line chart, a faan
 // histogram, and recent form as +/- chips over the last 10 games.
 

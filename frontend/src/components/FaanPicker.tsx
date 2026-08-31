@@ -1,4 +1,4 @@
-// docs/04-frontend.md § Entry area, step 2. Offers only the values in the
+// docs-initial-build/04-frontend.md § Entry area, step 2. Offers only the values in the
 // game's band (min_faan..max_faan inclusive) — nothing outside it is
 // selectable, so an out-of-range faan cannot be recorded. Wraps at 8 per
 // row rather than a <select>: one click, every option stays visible.

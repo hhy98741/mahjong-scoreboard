@@ -1,5 +1,5 @@
 // 罰 Penalty modal — offender picker plus a points-each field pre-filled
-// from ruleset.penalty_default (docs/04-frontend.md § Entry area). `P`
+// from ruleset.penalty_default (docs-initial-build/04-frontend.md § Entry area). `P`
 // opens it with focus on the offender picker; `Esc` closes it.
 
 import { useEffect, useRef, useState } from 'preact/hooks';

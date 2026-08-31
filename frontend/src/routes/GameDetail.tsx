@@ -1,4 +1,4 @@
-// #/history/game/:id — docs/04-frontend.md § Routes, docs/06-history-reports.md
+// #/history/game/:id — docs-initial-build/04-frontend.md § Routes, docs-initial-build/06-history-reports.md
 // Tier 1 #2: the full hand-by-hand log (reusing the scoreboard's
 // HandHistory component) plus a score curve — one line per seated player of
 // cumulative points across hands, round boundaries marked.

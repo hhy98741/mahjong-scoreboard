@@ -1,6 +1,6 @@
 // Ranked by net points, highest first — the only ranking that makes sense
 // within a single game (D13). FLIP transition on rank change.
-// docs/04-frontend.md § Standings.
+// docs-initial-build/04-frontend.md § Standings.
 
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import type { Seat } from '../types.ts';

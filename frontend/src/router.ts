@@ -1,4 +1,4 @@
-// Hash-based router (docs/04-frontend.md § Setup) — everything after the #
+// Hash-based router (docs-initial-build/04-frontend.md § Setup) — everything after the #
 // stays in the browser, so deep links work with no server rewrite rule.
 // Deliberately hand-rolled rather than a dependency; only the three routes
 // this session builds are recognised, everything else falls through to

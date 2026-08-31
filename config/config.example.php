@@ -1,7 +1,7 @@
 <?php
 // Copy to config/config.php and fill in real values. That file is gitignored
 // and never leaves this machine (or the server, where it is created once by
-// hand and never synced by deploy.sh). See docs/05-deployment.md.
+// hand and never synced by deploy.sh). See docs-initial-build/05-deployment.md.
 
 return [
     'db' => [

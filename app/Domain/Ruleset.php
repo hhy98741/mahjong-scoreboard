@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain;
 
-/** Value object over a ruleset snapshot (see docs/01-data-model.md § ruleset_snapshot JSON shape). */
+/** Value object over a ruleset snapshot (see docs-initial-build/01-data-model.md § ruleset_snapshot JSON shape). */
 final class Ruleset
 {
     /** @var array<int,int> faan => base points, every row 0..tableMaxFaan present */

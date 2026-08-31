@@ -1,4 +1,4 @@
-// #/game/:id — the main screen. docs/04-frontend.md § The Scoreboard.
+// #/game/:id — the main screen. docs-initial-build/04-frontend.md § The Scoreboard.
 
 import { useEffect, useState } from 'preact/hooks';
 import { Confirm } from '../components/Confirm.tsx';
@@ -29,7 +29,7 @@ export function Scoreboard({ id }: ScoreboardProps) {
     setError(null);
 
     // Every read replaces the store wholesale — never patched locally
-    // (docs/04-frontend.md § State discipline).
+    // (docs-initial-build/04-frontend.md § State discipline).
     api.game(id).then(
       (payload) => {
         if (!cancelled) currentGame.value = payload;

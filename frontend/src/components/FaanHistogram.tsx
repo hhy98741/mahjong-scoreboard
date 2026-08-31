@@ -1,5 +1,5 @@
-// Bar chart, inline SVG (docs/04-frontend.md § Setup — no charting library).
-// docs/06-history-reports.md #4: "A player whose wins cluster at the
+// Bar chart, inline SVG (docs-initial-build/04-frontend.md § Setup — no charting library).
+// docs-initial-build/06-history-reports.md #4: "A player whose wins cluster at the
 // minimum faan is playing a completely different game from one with a fat
 // tail." Table fallback is the caller's job.
 

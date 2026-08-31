@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 // Replays every game and checks the integrity rules from
-// docs/01-data-model.md § Integrity rules (rules 1-15, plus 16) against a
+// docs-initial-build/01-data-model.md § Integrity rules (rules 1-15, plus 16) against a
 // full GameState replay - the same replay GameService uses to answer every
 // game-state request, so this is the authority "no drift" between stored
 // hand state and a from-scratch replay actually means.

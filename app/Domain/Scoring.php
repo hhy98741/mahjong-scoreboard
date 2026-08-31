@@ -8,7 +8,7 @@ namespace App\Domain;
  * Payment math. Pure functions — no database, no HTTP.
  *
  * Every method returns an array keyed by every seated player id, deltas summing to zero.
- * See docs/02-scoring-engine.md § Part 1.
+ * See docs-initial-build/02-scoring-engine.md § Part 1.
  */
 final class Scoring
 {

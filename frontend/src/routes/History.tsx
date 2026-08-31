@@ -1,5 +1,5 @@
-// #/history — docs/04-frontend.md § Routes ("Game list + reports"),
-// docs/06-history-reports.md Tier 1 #1 and #3, plus Tier 2 #5-#9 (points flow
+// #/history — docs-initial-build/04-frontend.md § Routes ("Game list + reports"),
+// docs-initial-build/06-history-reports.md Tier 1 #1 and #3, plus Tier 2 #5-#9 (points flow
 // matrix, seat luck, streaks & records, feeder stats, win-type split). Seven
 // tabs: the game list, the all-time leaderboard (default sort: game win %,
 // per D13/D25), and one tab per Tier 2 report above.
@@ -280,7 +280,7 @@ function LeaderboardTab({ filters }: { filters: StatsFilters }) {
 
 // ---------------------------------------------------------------- Flow tab
 
-// docs/06-history-reports.md #5: an N×N grid, net points transferred from
+// docs-initial-build/06-history-reports.md #5: an N×N grid, net points transferred from
 // the row player to the column player, colored diverging red/green. The raw
 // matrix from GET /api/stats/flow is a one-directional "who paid whom"
 // total (always >= 0); the diverging color instead reflects each pair's
@@ -373,7 +373,7 @@ function FlowTab({ filters }: { filters: StatsFilters }) {
 
 // ---------------------------------------------------------------- Seats tab
 
-// docs/06-history-reports.md #6: net points and win rate grouped by the wind
+// docs-initial-build/06-history-reports.md #6: net points and win rate grouped by the wind
 // actually held when the hand was played — does East really win more?
 // GET /api/stats/seats only returns winds that occurred (at player_count < 4
 // at least one never does) and never invents a dealer field: wind_index 0 is
@@ -454,7 +454,7 @@ function SeatsTab({ filters }: { filters: StatsFilters }) {
 
 // ---------------------------------------------------------------- Records tab
 
-// docs/06-history-reports.md #7: a small board of superlatives, each linking
+// docs-initial-build/06-history-reports.md #7: a small board of superlatives, each linking
 // to the hand or game it came from. GET /api/stats/records returns eight
 // fixed keys, each null when scope has nothing to report — every non-null
 // entry links to #/history/game/{game_id}, the same target
@@ -561,7 +561,7 @@ function RecordsTab({ filters }: { filters: StatsFilters }) {
 
 // ---------------------------------------------------------------- Feeders tab
 
-// docs/06-history-reports.md #8: the complement of the win stats — per
+// docs-initial-build/06-history-reports.md #8: the complement of the win stats — per
 // player, as the discarder, how often they dealt into someone else's win and
 // how many points that cost, versus the table's overall rate. GET
 // /api/stats/feeders already sorts by discard_rate descending (biggest
@@ -641,7 +641,7 @@ function FeedersTab({ filters }: { filters: StatsFilters }) {
 
 // ---------------------------------------------------------------- Win types tab
 
-// docs/06-history-reports.md #9: self-pick vs discard as a share of each
+// docs-initial-build/06-history-reports.md #9: self-pick vs discard as a share of each
 // player's wins, plus a table-wide draw rate and 包 (bao) incidents. Bao
 // stays split by win type rather than blended: a discard bao always names
 // the discarder as liable (rule 16), a self-pick bao names a different,

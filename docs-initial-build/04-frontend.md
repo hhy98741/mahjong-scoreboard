@@ -182,7 +182,7 @@ is what makes `#/new` reachable again.
 
 ## The Scoreboard (`#/game/:id`)
 
-Four regions, per the owner's sketch (`docs/reference/scoreboard-dashboard.jpg`). **The
+Four regions, per the owner's sketch (`reference/scoreboard-dashboard.jpg`). **The
 sketch fixes the four regions and nothing else** — where it and this spec differ, this spec
 wins (D12b). In particular it draws its marker beside the lower-left position and calls it
 "Dealer marker"; the two markers are defined under § Markers below, and the opening-dealer

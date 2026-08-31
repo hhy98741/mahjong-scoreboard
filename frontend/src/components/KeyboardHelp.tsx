@@ -1,6 +1,6 @@
 // The `?` overlay — drawn as the three chair-ordered key rows themselves
 // rather than a table, since that is the picture that makes the scheme
-// learnable (docs/04-frontend.md § Keyboard shortcuts).
+// learnable (docs-initial-build/04-frontend.md § Keyboard shortcuts).
 
 interface KeyboardHelpProps {
   onClose: () => void;

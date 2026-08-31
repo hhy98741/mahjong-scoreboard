@@ -1,4 +1,4 @@
-// Entry area (bottom) — docs/04-frontend.md § Entry area, § Keyboard
+// Entry area (bottom) — docs-initial-build/04-frontend.md § Entry area, § Keyboard
 // shortcuts. Owns the whole data-entry region: winner/faan/win-type/包
 // controls, draw, penalty modal, undo with confirmation, the keyboard
 // scheme with its ? overlay, and (per "When state.is_complete...") the
@@ -75,7 +75,7 @@ export function EntryBar({ payload, lang }: EntryBarProps) {
   const nameOf = (id: number | null): string => (id === null ? '' : (seats.find((s) => s.player.id === id)?.player.name ?? `#${id}`));
 
   // At two players the discarder is the only opponent, so preselect them
-  // (docs/04-frontend.md § Keyboard shortcuts, § Entry area step 3).
+  // (docs-initial-build/04-frontend.md § Keyboard shortcuts, § Entry area step 3).
   function autoPreselectDiscarder(winner: number): number | null {
     if (seats.length !== 2) return null;
     const other = seats.find((s) => s.player.id !== winner);

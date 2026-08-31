@@ -16,8 +16,8 @@ phase contains; that one is only how the sessions get started.
 
 ## Phase 0 — Scaffold
 
-**Read:** `CLAUDE.md`, `docs/03-api.md` § Layout, `docs/04-frontend.md` § Setup,
-`docs/05-deployment.md` §§ Local development, Remote layout
+**Read:** `CLAUDE.md`, `03-api.md` § Layout, `04-frontend.md` § Setup,
+`05-deployment.md` §§ Local development, Remote layout
 
 Repo skeleton, tooling, and a request that reaches PHP and comes back as JSON.
 
@@ -65,7 +65,7 @@ directory — the `outDir` mistake in `04-frontend.md` § Setup looks like a cle
 
 ## Phase 1 — Schema
 
-**Read:** `docs/01-data-model.md`
+**Read:** `01-data-model.md`
 
 - `bin/migrate.php` — applies `migrations/*.sql` in filename order, records them in
   `schema_migrations`, is idempotent, and refuses to run half a file (each migration in
@@ -75,7 +75,7 @@ directory — the `outDir` mistake in `04-frontend.md` § Setup looks like a cle
 - `bin/seed.php` — the "Hong Kong Standard" ruleset and its 14 points rows. Idempotent:
   it inserts only if no ruleset of that name exists and never overwrites the owner's edits.
 - `bin/verify.php` — stub for now; it will grow the consistency checks from
-  `docs/02-scoring-engine.md` § Replay.
+  `02-scoring-engine.md` § Replay.
 - `bin/dbdump.php` — reads credentials from `config/config.php` and execs
   `mysqldump --single-transaction`, streaming SQL to stdout. Built here, with the rest of
   `bin/`, rather than in Phase 9: both `deploy/migrate.sh` and `deploy/backup.sh` depend on
@@ -92,7 +92,7 @@ directory — the `outDir` mistake in `04-frontend.md` § Setup looks like a cle
 
 ## Phase 2 — Auth
 
-**Read:** `docs/03-api.md` § Auth
+**Read:** `03-api.md` § Auth
 
 - `bin/create-user.php --username= --display-name= [--admin]`, hidden password entry.
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`.
@@ -116,7 +116,7 @@ username in the same window still succeeds.
 
 ## Phase 3 — Scoring engine
 
-**Read:** `docs/02-scoring-engine.md` (all of it)
+**Read:** `02-scoring-engine.md` (all of it)
 
 Pure PHP, no database, no HTTP. **This phase is tests-first.**
 
@@ -138,7 +138,7 @@ the one phase where "it looks right" is not acceptable — the numbers are the p
 
 ## Phase 4 — Players & rulesets API
 
-**Read:** `docs/03-api.md` §§ Players, Rulesets; `docs/01-data-model.md`
+**Read:** `03-api.md` §§ Players, Rulesets; `01-data-model.md`
 
 - `PlayerRepo`, `RulesetRepo`, and their routes.
 - `Service/AvatarService.php`: `finfo` type check, GD re-encode to 256×256 WebP,
@@ -158,7 +158,7 @@ avatar returns `"avatar_url": "/default.svg"` that actually resolves.
 
 ## Phase 5 — Games API
 
-**Read:** `docs/03-api.md` § Games; `docs/02-scoring-engine.md`
+**Read:** `03-api.md` § Games; `02-scoring-engine.md`
 
 The other high-risk phase. Wire the engine to the database.
 
@@ -182,10 +182,10 @@ drift between stored hand state and a full replay.
 
 ## Phase 6 — Scoreboard UI
 
-**Read:** `docs/04-frontend.md` (all of it), `docs/07-terminology.md`
+**Read:** `04-frontend.md` (all of it), `07-terminology.md`
 
 The screen everyone actually looks at. Follows the owner's sketch at
-`docs/reference/scoreboard-dashboard.jpg`.
+`reference/scoreboard-dashboard.jpg`.
 
 - Router, `api.ts`, `store.ts`, `types.ts`, login screen, session bootstrap.
 - `Home.tsx` — the landing screen, spec'd in `04-frontend.md` § Home. Small, but it is the
@@ -216,7 +216,7 @@ hand can be entered with the keyboard alone in three keystrokes plus Enter.
 
 ## Phase 7 — New game & setup UI
 
-**Read:** `docs/04-frontend.md` §§ Routes, Setup
+**Read:** `04-frontend.md` §§ Routes, Setup
 
 - `#/new`: ruleset picker and seat assignment for E/S/W/N.
 - `#/setup` Players tab: cards, inline edit, avatar upload with preview, retire.
@@ -230,7 +230,7 @@ the UI, including a two-player game at East+North — a seat pair no default pre
 
 ## Phase 8 — History & Tier 1 reports
 
-**Read:** `docs/06-history-reports.md` Tier 1; `docs/03-api.md` § Stats
+**Read:** `06-history-reports.md` Tier 1; `03-api.md` § Stats
 
 - `Repo/StatsRepo.php`.
 - `#/history` game list with filters, `#/history/game/:id` with the score curve,
@@ -247,7 +247,7 @@ while net points and games played stay reconcilable.
 
 ## Phase 9 — Deploy
 
-**Read:** `docs/05-deployment.md`
+**Read:** `05-deployment.md`
 
 The server is confirmed: cPanel/CloudLinux, Apache 2.4.68, MariaDB 10.5.25, PHP 8.3.33
 with every required extension present. See `05-deployment.md`.
@@ -284,7 +284,7 @@ deploy has been run without losing data, avatars, or `config/config.php`.
 
 ## Phase 10 — Tier 2 reports
 
-**Read:** `docs/06-history-reports.md` Tier 2
+**Read:** `06-history-reports.md` Tier 2
 
 Points flow matrix, seat luck, streaks and records, feeder stats, win-type split. Pure
 addition; nothing else depends on it. Pick them off in any order once the app has enough
@@ -294,7 +294,7 @@ real games in it to be interesting.
 
 ## Phase 11 — Tier 3 reports (optional)
 
-**Read:** `docs/06-history-reports.md` Tier 3
+**Read:** `06-history-reports.md` Tier 3
 
 Not one of the ten core phases — the app is complete and deployable without it. Tier 3 is
 explicitly "optional polish" in `06-history-reports.md`: session summary, head-to-head,
@@ -303,7 +303,7 @@ activity heatmap, `GET /api/stats/export.csv`. Same shape as Phase 10 — pure a
 there's an appetite for more reports.
 
 **Done when:** each report picked up works end to end (endpoint documented in
-`docs/03-api.md` § Stats, UI reachable from `#/history`) and `composer test` stays green.
+`03-api.md` § Stats, UI reachable from `#/history`) and `composer test` stays green.
 
 ---
 

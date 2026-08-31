@@ -13,14 +13,14 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 
 /**
- * docs/PLAN.md Phase 8's reconciliation test (docs/06-history-reports.md §
+ * docs-initial-build/PLAN.md Phase 8's reconciliation test (docs-initial-build/06-history-reports.md §
  * Implementation notes): "the sum of all players' net points over any range
  * is exactly 0." Plays a small scripted game through the real GameService
  * (win / draw / penalty / self-pick+bao, so every outcome shape feeds
  * hand_scores), then checks Repo\StatsRepo::leaderboard's net_points column
  * both reconciles to zero and ties out against a manual
  * `SUM(points_delta)` query — the same tie-out the human "Done when" check
- * in docs/PLAN.md Phase 8 asks for.
+ * in docs-initial-build/PLAN.md Phase 8 asks for.
  *
  * Requires a reachable local database — skips itself if unreachable, same
  * as GamesIntegrationTest.
@@ -182,8 +182,8 @@ final class StatsRepoTest extends TestCase
     }
 
     /**
-     * docs/06-history-reports.md § Implementation notes reconciliation
-     * requirement, applied to the flow matrix specifically (docs/03-api.md
+     * docs-initial-build/06-history-reports.md § Implementation notes reconciliation
+     * requirement, applied to the flow matrix specifically (docs-initial-build/03-api.md
      * § GET /api/stats/flow): "attributed flows must sum to zero" — for
      * every player in scope, points received via the matrix minus points
      * paid via the matrix must equal their leaderboard net_points, and the
@@ -305,7 +305,7 @@ final class StatsRepoTest extends TestCase
             $this->assertSame(0, $grandTotal, 'attributed flows must sum to zero across all players');
 
             // Sanity check the concrete numbers for this scripted game
-            // (docs/02-scoring-engine.md Part 1, seeded points 3->8, 5->16,
+            // (docs-initial-build/02-scoring-engine.md Part 1, seeded points 3->8, 5->16,
             // N=4): hand #1 is plain case A (discard, no bao) — the
             // discarder Ben pays 2B=16, and Cal/Dee each pay the "others"
             // share B=8, all attributed to Ann. Hand #3's penalty adds 128
@@ -329,12 +329,12 @@ final class StatsRepoTest extends TestCase
     }
 
     /**
-     * docs/06-history-reports.md #6 (seat luck), backing GET /api/stats/seats
-     * (docs/03-api.md § GET /api/stats/seats): group by the wind actually
+     * docs-initial-build/06-history-reports.md #6 (seat luck), backing GET /api/stats/seats
+     * (docs-initial-build/03-api.md § GET /api/stats/seats): group by the wind actually
      * held when the hand was played, not by chair, and break out dealer win
      * rate separately. Reuses the same four-hand script as the flow test
      * (win-by-dealer, draw, penalty, self-pick+bao by a non-dealer): per
-     * docs/02-scoring-engine.md lines 199 and 217, the deal stays with Ann
+     * docs-initial-build/02-scoring-engine.md lines 199 and 217, the deal stays with Ann
      * through all four hands (a win by the dealer keeps the deal; a draw
      * keeps the deal; a penalty is a dead hand and keeps the deal; a
      * non-dealer win only rotates the deal starting the *next* hand), so
@@ -469,7 +469,7 @@ final class StatsRepoTest extends TestCase
     }
 
     /**
-     * docs/06-history-reports.md #6: "at fewer than four players some winds
+     * docs-initial-build/06-history-reports.md #6: "at fewer than four players some winds
      * never occur, so group by the wind actually held rather than assuming
      * four buckets." A 2-player game at East+South only ever occupies wind
      * buckets 0 and 1 — this asserts GET /api/stats/seats never invents rows
@@ -604,7 +604,7 @@ final class StatsRepoTest extends TestCase
             }
             $this->assertSame([0, 1, 2, 3], array_keys($byWind));
 
-            // Ruleset base_points for faan=3 is 8 (docs/02-scoring-engine.md
+            // Ruleset base_points for faan=3 is 8 (docs-initial-build/02-scoring-engine.md
             // Part 1, N=4 case A, no bao): discarder pays 2B=16, the other
             // two players pay B=8 each, all to the winner.
             //
@@ -642,8 +642,8 @@ final class StatsRepoTest extends TestCase
     }
 
     /**
-     * docs/06-history-reports.md #7 (streaks and records), backing
-     * GET /api/stats/records (docs/03-api.md § GET /api/stats/records). A
+     * docs-initial-build/06-history-reports.md #7 (streaks and records), backing
+     * GET /api/stats/records (docs-initial-build/03-api.md § GET /api/stats/records). A
      * single six-hand game engineered so every one of the eight keys has a
      * distinct, hand-calculable expected value:
      *
@@ -810,8 +810,8 @@ final class StatsRepoTest extends TestCase
     }
 
     /**
-     * docs/06-history-reports.md #8 (feeder stats), backing GET
-     * /api/stats/feeders (docs/03-api.md § GET /api/stats/feeders): per
+     * docs-initial-build/06-history-reports.md #8 (feeder stats), backing GET
+     * /api/stats/feeders (docs-initial-build/03-api.md § GET /api/stats/feeders): per
      * player, as the discarder, hands dealt into, points paid, and discard
      * rate vs. the table average. Two discard-win hands (Ben feeds Ann on
      * #1, Cal feeds Dee on #5) among five total, with a draw/penalty/bao
@@ -1005,7 +1005,7 @@ final class StatsRepoTest extends TestCase
     }
 
     /**
-     * docs/06-history-reports.md #9: self-pick vs discard as a share of each
+     * docs-initial-build/06-history-reports.md #9: self-pick vs discard as a share of each
      * player's wins, a table-wide draw rate, and 包 (bao) kept split by win
      * type — a discard bao always names the discarder as liable (rule 16),
      * a self-pick bao names a different, already-on-the-hook player (rule

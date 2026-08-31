@@ -100,7 +100,7 @@ final class RulesetRepo
         $this->pdo->prepare('DELETE FROM rulesets WHERE id = ?')->execute([$id]);
     }
 
-    // Guards DELETE /api/rulesets/{id} (docs/03-api.md § Rulesets): completed
+    // Guards DELETE /api/rulesets/{id} (docs-initial-build/03-api.md § Rulesets): completed
     // games carry their own snapshot and are unaffected, so only an
     // in_progress reference blocks the delete.
     public function isReferencedByInProgressGame(int $id): bool

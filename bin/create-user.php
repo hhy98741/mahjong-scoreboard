@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// There is no public signup (docs/03-api.md § Auth). Creates a login account
+// There is no public signup (docs-initial-build/03-api.md § Auth). Creates a login account
 // interactively, with the password entered twice and never echoed.
 //
 //   php bin/create-user.php --username=ann --display-name="Ann" [--admin]

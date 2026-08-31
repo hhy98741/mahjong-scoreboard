@@ -7,7 +7,7 @@ import type { GameStatePayload, Player, Ruleset, User } from './types.ts';
 export const session = signal<User | null | undefined>(undefined);
 
 // Replaced wholesale on every read/write — never patched in place
-// (docs/04-frontend.md § State discipline).
+// (docs-initial-build/04-frontend.md § State discipline).
 export const currentGame = signal<GameStatePayload | null>(null);
 
 // Populated by NewGame.tsx and Setup.tsx on mount — each route refetches

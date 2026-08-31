@@ -8,8 +8,9 @@ It does not simulate tiles or validate hands. A human judges the 番 (faan) coun
 it from the values the game allows — the picker offers only the faan in the configured
 range, so an out-of-range score cannot be recorded.
 
-**Status: specified, not yet built.** Everything in `docs/` is written. Phase 0 of
-`docs/PLAN.md` is the next step.
+**Status: built.** All ten core phases plus the Tier 1 and Tier 2 history reports are done
+and tested; the project is now in maintenance mode (bug fixes, small features, design
+tweaks). Four optional Tier 3 reports remain unbuilt — see [`docs/README.md`](docs/README.md).
 
 ---
 
@@ -70,26 +71,19 @@ frontend/src/   TypeScript SPA (source only - no package.json of its own)
 frontend/public/ static assets copied verbatim into dist/, e.g. default.svg
 public_html/    local docroot only - api/index.php, router.php, avatars/
 deploy/         deploy.sh, migrate.sh, backup.sh, remote/ (the one .htaccess + api stub)
-docs/           the specs - start with PLAN.md
-docs/reference/ source material: the HK rules PDF, the layout sketch
+docs/           current docs - start with docs/README.md
+docs-initial-build/ frozen pre-build specs (design history, not maintained)
 scratchpad/     local working notes (gitignored)
 ```
 
 ## Documentation
 
-Read [`docs/PLAN.md`](docs/PLAN.md) first — ten phases, each with what to read, what to
-build, and a "done when" test.
-
-| Spec | Covers |
-|---|---|
-| [`00-overview.md`](docs/00-overview.md) | Scope, glossary, decisions log |
-| [`01-data-model.md`](docs/01-data-model.md) | MariaDB schema and integrity rules |
-| [`02-scoring-engine.md`](docs/02-scoring-engine.md) | Payment math, round state machine, test vectors |
-| [`03-api.md`](docs/03-api.md) | JSON API contract |
-| [`04-frontend.md`](docs/04-frontend.md) | Screens, scoreboard layout, color scheme |
-| [`05-deployment.md`](docs/05-deployment.md) | Server details, `.htaccess`, rsync scripts |
-| [`06-history-reports.md`](docs/06-history-reports.md) | Reporting features |
-| [`07-terminology.md`](docs/07-terminology.md) | Bilingual term list |
+Read [`docs/README.md`](docs/README.md) first — current status, the maintenance workflow,
+and what (little) is left to build. [`docs/DECISIONS.md`](docs/DECISIONS.md) is the living
+decisions log. The original pre-build specs (data model, API contract, scoring engine,
+frontend design, deployment, terminology, the phase-by-phase plan) are frozen in
+[`docs-initial-build/`](docs-initial-build/) — useful history, not kept in sync with the
+code.
 
 [`CLAUDE.md`](CLAUDE.md) holds the conventions any agent working in this repo must follow.
 
@@ -101,8 +95,8 @@ build, and a "done when" test.
   undo deletes the last hand and recomputes.
 - **Rulesets are snapshotted onto a game.** Editing a ruleset never rewrites history.
 - **Payment math and the dealer rotation carry the whole product.** They are pure PHP with
-  no database, tested against the vectors in `02-scoring-engine.md`, before anything is
-  wired up.
+  no database, tested against the vectors in `docs-initial-build/02-scoring-engine.md`,
+  before anything is wired up.
 
 ## Setup
 
@@ -115,7 +109,7 @@ php bin/create-user.php --username=you --display-name="You" --admin
 bun install && bun run dev
 ```
 
-First-time server setup is in [`docs/05-deployment.md`](docs/05-deployment.md).
+First-time server setup is in [`docs-initial-build/05-deployment.md`](docs-initial-build/05-deployment.md).
 
 ## Licence
 

@@ -6,7 +6,7 @@ namespace App\Domain;
 
 /**
  * Replays a list of hands into current scores + table state.
- * See docs/02-scoring-engine.md § Part 2 and § Part 3.
+ * See docs-initial-build/02-scoring-engine.md § Part 2 and § Part 3.
  *
  * Immutable: applyHand() and replay() return a new instance.
  */

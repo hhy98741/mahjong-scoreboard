@@ -1,6 +1,6 @@
 // A row of seated-player buttons with avatars, used for the winner,
 // discarder and 包 liable-player pickers in EntryBar.tsx — one click each,
-// not a <select> (docs/04-frontend.md § Entry area).
+// not a <select> (docs-initial-build/04-frontend.md § Entry area).
 
 import type { Seat } from '../types.ts';
 

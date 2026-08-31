@@ -9,7 +9,7 @@ use App\Domain\GameState;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Part 2 (round/dealer state machine) vectors from docs/02-scoring-engine.md § Part 4.
+ * Part 2 (round/dealer state machine) vectors from docs-initial-build/02-scoring-engine.md § Part 4.
  *
  * S5 is deliberately retired — do not reinstate it.
  *
@@ -388,7 +388,7 @@ final class GameStateTest extends TestCase
     public function testV8NotApplicableAtDomainLayer(): void
     {
         // "V8: deleting a hand that is not the last" is explicitly scoped to the undo
-        // HTTP route in docs/03-api.md ("V8 belongs to the undo route"). The domain
+        // HTTP route in docs-initial-build/03-api.md ("V8 belongs to the undo route"). The domain
         // layer only ever sees an ordered hand list to replay; there is no hand
         // identity to delete by, so this rule has no equivalent here.
         $this->markTestSkipped(

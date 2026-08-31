@@ -98,7 +98,7 @@ final class PlayerRepo
         $this->pdo->prepare('UPDATE players SET is_active = 0 WHERE id = ?')->execute([$id]);
     }
 
-    // Guards DELETE /api/players/{id} (docs/03-api.md § Players): 409 if the
+    // Guards DELETE /api/players/{id} (docs-initial-build/03-api.md § Players): 409 if the
     // player is seated in the one game that may be in_progress.
     public function isSeatedInInProgressGame(int $id): bool
     {

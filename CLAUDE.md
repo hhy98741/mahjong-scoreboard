@@ -11,30 +11,24 @@ sessions on this project.
 
 ## Read this first
 
-Specs live in `docs/`. Build order and the definition of done for each step is in
-[docs/PLAN.md](docs/PLAN.md). Do not start coding a phase before reading its listed specs.
-
-| Spec | Covers |
-|---|---|
-| `docs/00-overview.md` | Product scope, glossary, decisions log |
-| `docs/01-data-model.md` | MariaDB schema, migrations, seed data |
-| `docs/02-scoring-engine.md` | Payment math + round/dealer state machine + test vectors |
-| `docs/03-api.md` | PHP JSON API contract |
-| `docs/04-frontend.md` | SPA structure and screen designs |
-| `docs/05-deployment.md` | Build + rsync deploy to shared hosting |
-| `docs/06-history-reports.md` | Long-term reporting features |
-| `docs/07-terminology.md` | Bilingual (English / 中文) term list and language modes |
+The app is **built and in maintenance mode** — no more phased build, just bug fixes, small
+features, and design tweaks. [`docs/README.md`](docs/README.md) explains the current docs
+layout and the workflow for new work; [`docs/DECISIONS.md`](docs/DECISIONS.md) is the living
+decisions log (code comments cite it by number, e.g. `D25`). The original pre-build spec set
+(data model, API contract, scoring engine, frontend design, deployment, terminology) is
+frozen in [`docs-initial-build/`](docs-initial-build/) — useful design history, not
+maintained, and not authoritative over the code.
 
 ## Non-negotiable conventions
 
 - **Spelling: `faan`, never `fan`.** Cantonese romanisation, used in code identifiers,
   DB columns, API fields, and UI copy. `faan`, `min_faan`, `max_faan`, `table_max_faan`.
 - **Spelling: `color`, never `colour`.** `players.color`, the API field, the CSS custom
-  properties, and prose. See decision D27.
+  properties, and prose. See `docs/DECISIONS.md` D27.
 - **Nothing is hardcoded to four players.** `N` is `games.player_count` (2, 3 or 4) and the
   occupied chairs are chosen per game. Winds are always `% 4`; only the deal skips empty
   chairs. A stray `% 4` where `N` belongs — or `N` where `4` belongs — is the most likely
-  bug in this codebase. See D23, D23b, D23c, D24.
+  bug in this codebase. See `docs/DECISIONS.md` D23, D23b, D23c, D24.
 - **Hands are an append-only log.** Player scores and round/dealer state are *always*
   derived by replaying `hands` in order. Never mutate a hand in place; undo deletes the
   last hand and recomputes.
@@ -42,9 +36,9 @@ Specs live in `docs/`. Build order and the definition of done for each step is i
   change the scores of a game already played.
 - **All point values are integers.** Points only, no decimals, no currency. Nothing in
   this app is denominated in money, and no label should imply otherwise.
-- **Rank by net points within a game; by rate across games.** See decision D13.
+- **Rank by net points within a game; by rate across games.** See `docs/DECISIONS.md` D13.
 - **No display strings in the API.** It returns enums (`"self_pick"`, `wind_index: 2`);
-  the frontend translates. See `docs/07-terminology.md`.
+  the frontend translates. See `docs-initial-build/07-terminology.md`.
 - **Strict types, PDO with prepared statements only.** No ORM, no framework.
 - **No secrets and no host details in the repo — it is public.** Real domains, usernames,
   server paths, and credentials belong in `config/config.php` and `deploy/deploy.conf`,
@@ -52,12 +46,12 @@ Specs live in `docs/`. Build order and the definition of done for each step is i
   refer to `$DOCROOT`, `$APPDIR`, `$SITE`, `$REMOTE` or `example.com`, never real values.
 - **One `.htaccess`, at the document root**, version-controlled at `deploy/remote/.htaccess`.
   Never add one in a subdirectory — mod_rewrite rules are not inherited, so it would bypass
-  the firewall and the HTTPS redirect. See D20.
+  the firewall and the HTTPS redirect. See `docs/DECISIONS.md` D20.
 - **Seed data lives in `bin/seed.php`, never in a migration.** `migrations/` is schema only.
 - **One `package.json`, at the repo root.** `frontend/` holds source and `vite.config.ts`
   only. Vite's root is `frontend/`, so `build.outDir: '../dist'` lands at repo-root `dist/`
   — the path `deploy.sh` ships. A nested manifest breaks the root `bun install` the deploy
-  depends on. See D28.
+  depends on. See `docs/DECISIONS.md` D28.
 
 ## Stack
 
@@ -107,7 +101,8 @@ using plain `bunx playwright ...` for throwaway one-off scripts outside `tests/e
 
 `tests/e2e/regression.mjs` is a saved, manually-invoked Playwright suite — not wired into
 `composer test` or any CI (there is none for this project). It drives the real frontend —
-clicks and the documented keyboard shortcuts (`docs/04-frontend.md` § Keyboard shortcuts),
+clicks and the documented keyboard shortcuts (`docs-initial-build/04-frontend.md` § Keyboard
+shortcuts),
 never the API directly for anything under test — through: Setup player creation, three full
 games (N=4, N=3, and N=2 seated at the *non-default* East+South pair), every win type and
 both 包 flavours (discard-bao and self-pick-bao), a full 4-round wrap, undo/redo of both a

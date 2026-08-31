@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// UI-driven regression smoke test — docs/PLAN.md's ten phases are all built;
+// UI-driven regression smoke test — docs-initial-build/PLAN.md's ten phases are all built;
 // this exercises the real frontend (clicks + keyboard shortcuts, not the API
 // directly) end to end: Setup player creation, New game at N=4/3/2, hand
 // entry (draw, penalty, self-pick, discard, both 包 flavours, undo, a natural
@@ -12,13 +12,17 @@
 // GamesIntegrationTest.php — this script's job is to catch UI/API wiring
 // regressions, not to re-verify the math.
 //
-// Run (ad hoc, no project devDependency — see CLAUDE.md § Browser
-// verification):
-//   bunx -p playwright bun run tests/e2e/regression.mjs
+// Run (see CLAUDE.md § End-to-end regression tests):
+//   bun run test:e2e
 //
 // Requires: bun run serve:api (8080), bun run dev (5173), the local DB
-// reachable, and one login account (php bin/create-user.php). Set
-// MJSB_E2E_USER / MJSB_E2E_PASS if the default 'e2e' account doesn't exist.
+// reachable, and one login account (php bin/create-user.php --admin). Set
+// MJSB_E2E_USER / MJSB_E2E_PASS if the default 'e2e' account doesn't exist,
+// or MJSB_E2E_BASE for a non-default Vite URL.
+//
+// MJSB_E2E_HEADED=1 runs with a visible browser window (plus slowMo, default
+// 150ms/step — override with MJSB_E2E_SLOWMO) instead of headless, to watch
+// the run happen.
 
 import { chromium } from 'playwright';
 
@@ -440,7 +444,11 @@ async function checkHistoryReports(page, players, gameIds) {
 // ---------------------------------------------------------------------- main
 
 async function main() {
-  const browser = await chromium.launch();
+  const headed = process.env.MJSB_E2E_HEADED === '1';
+  const browser = await chromium.launch({
+    headless: !headed,
+    slowMo: headed ? Number(process.env.MJSB_E2E_SLOWMO ?? 150) : 0,
+  });
   const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
   const pageErrors = [];
   page.on('pageerror', (e) => {
@@ -521,7 +529,7 @@ async function main() {
     check('game1: dealer moved to chair3', api.state.dealer_wind_index === 3, JSON.stringify(api.state));
 
     // Ann (chair0) wins discard from Ben — 4th consecutive non-dealer win from
-    // dealer0 (docs/02-scoring-engine.md S6): wraps East -> South, dealer -> 0.
+    // dealer0 (docs-initial-build/02-scoring-engine.md S6): wraps East -> South, dealer -> 0.
     await recordWinKeyboard(page, g1, { winnerChair: 0, winType: 'discard', discarderChair: 1, bao: false, faan: 12 });
     api = await assertGameState(page, g1, 'game1 after round wrap');
     check('game1: round wrapped to South', api.state.round_wind === 1 && api.state.dealer_wind_index === 0, JSON.stringify(api.state));

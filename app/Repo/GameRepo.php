@@ -46,7 +46,7 @@ final class GameRepo
     /**
      * SELECT ... FOR UPDATE — must be called inside an open transaction.
      * Row-locks the game for the duration of the eight-step hand transaction
-     * (docs/03-api.md § POST /api/games/{id}/hands, step 1).
+     * (docs-initial-build/03-api.md § POST /api/games/{id}/hands, step 1).
      *
      * @return array{id:int, name:?string, ruleset_id:?int, ruleset_snapshot:array<string,mixed>, status:string, player_count:int, min_faan:int, max_faan:int, started_at:string, ended_at:?string, seats:array<int,int>}|null
      */
@@ -117,7 +117,7 @@ final class GameRepo
         $this->pdo->prepare("UPDATE games SET status = ?, ended_at = NOW() WHERE id = ?")->execute([$status, $id]);
     }
 
-    /** Undo of the hand that completed a game (docs/02-scoring-engine.md § Undo). */
+    /** Undo of the hand that completed a game (docs-initial-build/02-scoring-engine.md § Undo). */
     public function reopen(int $id): void
     {
         $this->pdo->prepare("UPDATE games SET status = 'in_progress', ended_at = NULL WHERE id = ?")->execute([$id]);

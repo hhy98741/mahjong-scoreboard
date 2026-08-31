@@ -19,7 +19,7 @@ use App\Service\GameService;
 
 // Exempt from auth for the whole life of the project — deploy.sh smoke-tests
 // this route and rolls back the deploy on a non-200, so it must never require
-// a session. See docs/03-api.md § Health.
+// a session. See docs-initial-build/03-api.md § Health.
 $router->get('/api/health', function (): void {
     Response::json(['status' => 'ok', 'php' => PHP_VERSION]);
 });
@@ -174,7 +174,7 @@ $router->patch('/api/players/{id}', function (Request $request, string $id) use 
     Response::json($playerPayload($updated));
 });
 
-// The one route that accepts multipart/form-data (docs/03-api.md § Auth) -
+// The one route that accepts multipart/form-data (docs-initial-build/03-api.md § Auth) -
 // Http/Middleware/Auth.php carves out exactly this path for that content
 // type; the Origin check still applies unchanged and is the real guard.
 $router->post('/api/players/{id}/avatar', function (Request $request, string $id) use ($config, $playerPayload): void {
@@ -378,7 +378,7 @@ $router->delete('/api/rulesets/{id}', function (Request $request, string $id) us
 // ---------------------------------------------------------------- games
 
 // GameService owns validation, the eight-step hand transaction, and payload
-// assembly (docs/03-api.md § Games; docs/02-scoring-engine.md). Routes below
+// assembly (docs-initial-build/03-api.md § Games; docs-initial-build/02-scoring-engine.md). Routes below
 // only parse the request and translate exceptions to HTTP status codes:
 // DomainException -> 422, ConflictException -> 409, a null return -> 404.
 
@@ -515,7 +515,7 @@ $router->patch('/api/games/{id}', function (Request $request, string $id) use ($
     Response::json($payload);
 });
 
-// Admin only (docs/03-api.md § Games), hard delete, requires ?confirm=1 - the
+// Admin only (docs-initial-build/03-api.md § Games), hard delete, requires ?confirm=1 - the
 // one destructive route in the API.
 $router->delete('/api/games/{id}', function (Request $request, string $id) use ($config): void {
     $currentUser = Auth::currentUser($config);
@@ -539,7 +539,7 @@ $router->delete('/api/games/{id}', function (Request $request, string $id) use (
 
 // ---------------------------------------------------------------- stats
 
-// Read-only, backing docs/06-history-reports.md via Repo\StatsRepo.
+// Read-only, backing docs-initial-build/06-history-reports.md via Repo\StatsRepo.
 // player_count defaults to 4 on EVERY stats endpoint (D25) — rate
 // statistics are not comparable across player counts. ?player_count=all
 // blends deliberately.

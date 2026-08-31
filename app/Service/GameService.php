@@ -16,10 +16,10 @@ use PDO;
 
 /**
  * Orchestrates games and hands: validation, the eight-step hand transaction
- * (docs/03-api.md § POST /api/games/{id}/hands), and assembling the full
+ * (docs-initial-build/03-api.md § POST /api/games/{id}/hands), and assembling the full
  * game-state payload every write returns. Repo\GameRepo and Repo\HandRepo
- * are pure data access; this is where docs/02-scoring-engine.md and
- * docs/01-data-model.md's integrity rules actually get enforced.
+ * are pure data access; this is where docs-initial-build/02-scoring-engine.md and
+ * docs-initial-build/01-data-model.md's integrity rules actually get enforced.
  *
  * Round/dealer state is never trusted from the client or from the stored
  * "before this hand" columns when recording a new hand — it is always
@@ -155,7 +155,7 @@ final class GameService
     }
 
     /**
-     * The eight-step transaction (docs/03-api.md § POST /api/games/{id}/hands).
+     * The eight-step transaction (docs-initial-build/03-api.md § POST /api/games/{id}/hands).
      *
      * @param array<string,mixed> $input
      * @return array<string,mixed>|null null if the game does not exist

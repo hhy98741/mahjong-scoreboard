@@ -15,11 +15,11 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Wires Domain\Scoring / Domain\GameState to the database through
- * GameService — docs/PLAN.md Phase 5's integration test. Plays a scripted
+ * GameService — docs-initial-build/PLAN.md Phase 5's integration test. Plays a scripted
  * 16+ hand game end to end at N=4, N=3, and N=2 (the N=2 run at a
  * non-default seat pair, East+South, so a hardcoded 4-chair assumption
  * cannot pass — see the owner's worked example in
- * docs/02-scoring-engine.md § two players at East and South).
+ * docs-initial-build/02-scoring-engine.md § two players at East and South).
  *
  * Each scenario asserts: final totals sum to zero after every hand, the
  * game auto-completes at exactly 4N hands, a second game cannot be started

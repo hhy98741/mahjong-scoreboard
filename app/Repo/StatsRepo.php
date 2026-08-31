@@ -7,8 +7,8 @@ namespace App\Repo;
 use PDO;
 
 /**
- * Read-only aggregate queries backing docs/06-history-reports.md Tier 1, plus
- * the five Tier 2 shapes docs/03-api.md § Stats pulls into this same table
+ * Read-only aggregate queries backing docs-initial-build/06-history-reports.md Tier 1, plus
+ * the five Tier 2 shapes docs-initial-build/03-api.md § Stats pulls into this same table
  * (flow, seats, records, feeders, win-types) so the endpoint list matches the
  * spec even though their UI is Phase 10. Never cached (06-history-reports.md
  * § Implementation notes).
@@ -81,7 +81,7 @@ final class StatsRepo
             $rows[] = $this->leaderboardRow($pid, $agg, $gamesWon[$pid] ?? 0, $faanStats[$pid] ?? [], $players[$pid] ?? null);
         }
 
-        // Default sort: game win % descending, per docs/06-history-reports.md
+        // Default sort: game win % descending, per docs-initial-build/06-history-reports.md
         // "Which ranking is the ranking" — the frontend may re-sort by any
         // column, but this is the sort the leaderboard opens on.
         usort($rows, static function (array $a, array $b): int {
@@ -158,7 +158,7 @@ final class StatsRepo
 
     /**
      * N x N matrix of net points transferred from the row player to the
-     * column player (docs/06-history-reports.md #5). Draws contribute
+     * column player (docs-initial-build/06-history-reports.md #5). Draws contribute
      * nothing; a win attributes each loser's negative delta to the winner;
      * a penalty attributes each recipient's positive delta to the offender.
      *
@@ -242,7 +242,7 @@ final class StatsRepo
 
     /**
      * Net points and win rate grouped by the wind actually held when the
-     * hand was played (docs/06-history-reports.md #6): does East really win
+     * hand was played (docs-initial-build/06-history-reports.md #6): does East really win
      * more? Aggregated across the whole population in scope, not per
      * player — `?player_ids=` narrows which players' hands count, it does
      * not return one row per player. wind_index 0 doubles as the dealer
@@ -292,7 +292,7 @@ final class StatsRepo
 
     /**
      * Per-hand cumulative totals for one game, for the replay chart
-     * (docs/06-history-reports.md #2). Unscoped by the usual filters — a
+     * (docs-initial-build/06-history-reports.md #2). Unscoped by the usual filters — a
      * single game either exists or it doesn't.
      *
      * @return array<string,mixed>|null null if the game does not exist
@@ -354,8 +354,8 @@ final class StatsRepo
     }
 
     /**
-     * The streaks-and-records board (docs/06-history-reports.md #7,
-     * docs/03-api.md § GET /api/stats/records). Eight fixed keys, each null
+     * The streaks-and-records board (docs-initial-build/06-history-reports.md #7,
+     * docs-initial-build/03-api.md § GET /api/stats/records). Eight fixed keys, each null
      * when scope has no qualifying data. `?player_ids=` narrows the players
      * considered throughout (same convention as seats()) but never changes
      * what actually happened in a game — win streak, drought, dealer
@@ -615,7 +615,7 @@ final class StatsRepo
     }
 
     /**
-     * Per player, as the discarder (docs/06-history-reports.md #8): hands
+     * Per player, as the discarder (docs-initial-build/06-history-reports.md #8): hands
      * dealt into, points paid as discarder, and discard rate vs. the table
      * average. The complement of the win stats — nobody tracks this by
      * hand. One row per player seated on at least one hand in scope;
@@ -712,7 +712,7 @@ final class StatsRepo
 
     /**
      * Self-pick vs discard as a share of each player's wins, plus a
-     * table-wide draw rate and 包 (bao) incidents (docs/06-history-
+     * table-wide draw rate and 包 (bao) incidents (docs-initial-build/06-history-
      * reports.md #9). Bao is kept split by win type rather than blended:
      * a discard bao always names the discarder as liable (rule 16), while
      * a self-pick bao names a *different* player already on the hook

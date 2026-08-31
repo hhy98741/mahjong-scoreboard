@@ -8,7 +8,7 @@ use PDO;
 
 /**
  * Pure data access for the append-only `hands` + `hand_scores` log.
- * See docs/01-data-model.md: never UPDATE a row here; undo deletes the
+ * See docs-initial-build/01-data-model.md: never UPDATE a row here; undo deletes the
  * highest hand_number.
  */
 final class HandRepo

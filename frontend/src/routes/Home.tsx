@@ -1,4 +1,4 @@
-// docs/04-frontend.md § Home. On mount, redirect straight to the live game
+// docs-initial-build/04-frontend.md § Home. On mount, redirect straight to the live game
 // if one exists — a table night reopens this screen constantly and every
 // one of those should land back on the scoreboard with no click.
 

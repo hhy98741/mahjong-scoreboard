@@ -1,5 +1,5 @@
 // Shared date-range / player-count / abandoned-games filter row for every
-// stats-backed screen (docs/06-history-reports.md: "Every report accepts a
+// stats-backed screen (docs-initial-build/06-history-reports.md: "Every report accepts a
 // date range... with quick presets: All time · This year · Last 90 days ·
 // Last session"). player_count is always visible with its current value
 // shown (D25) so nobody mistakes a filtered view for the whole record.

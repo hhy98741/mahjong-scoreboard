@@ -1,7 +1,7 @@
-// Hand-rolled inline SVG line chart (docs/04-frontend.md § Setup: "Charts
+// Hand-rolled inline SVG line chart (docs-initial-build/04-frontend.md § Setup: "Charts
 // and the diamond are inline SVG" — no charting library). Used for the
 // game-detail score curve and the player-detail career chart
-// (docs/06-history-reports.md #2, #4). Every chart needs a table fallback
+// (docs-initial-build/06-history-reports.md #2, #4). Every chart needs a table fallback
 // beneath it per that spec — callers render one, this component only draws.
 
 interface Series {

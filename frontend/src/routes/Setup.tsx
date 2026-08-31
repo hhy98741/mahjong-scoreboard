@@ -1,4 +1,4 @@
-// #/setup — docs/04-frontend.md § Setup. Two tabs: Players (cards, inline
+// #/setup — docs-initial-build/04-frontend.md § Setup. Two tabs: Players (cards, inline
 // edit, avatar upload, retire) and Rulesets (the faan table editor with a
 // live payout preview, fill helpers, duplicate).
 
@@ -466,7 +466,7 @@ function RulesetsTab({ onChange }: RulesetsTabProps) {
       await onChange();
     } catch (err) {
       // Close the confirm dialog on failure too — it sits above the error
-      // banner (docs/04-frontend.md § modals use a z-indexed backdrop), so
+      // banner (docs-initial-build/04-frontend.md § modals use a z-indexed backdrop), so
       // leaving it open would hide the very message explaining why nothing
       // happened.
       setDeleteConfirm(false);

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-// The only untrusted input that lands on disk (docs/PLAN.md § Risk notes). The
+// The only untrusted input that lands on disk (docs-initial-build/PLAN.md § Risk notes). The
 // client's Content-Type header and the filename extension are never trusted:
 // finfo reads the real bytes, and every upload is re-encoded through GD before
 // it touches the filesystem, which also strips EXIF and neutralises polyglot

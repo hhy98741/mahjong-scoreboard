@@ -6,7 +6,7 @@ namespace App\Repo;
 
 use PDO;
 
-// Login throttling against docs/03-api.md § Auth: 5 failures per username per
+// Login throttling against docs-initial-build/03-api.md § Auth: 5 failures per username per
 // 15 minutes. State lives here, not in the session - the attacker controls
 // their own session. Keyed on the username as typed, so a bad username
 // throttles the same way a bad password does and the endpoint cannot be used

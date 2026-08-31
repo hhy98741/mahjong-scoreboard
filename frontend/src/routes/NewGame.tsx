@@ -1,4 +1,4 @@
-// #/new — docs/04-frontend.md § New game. Every per-game decision lives
+// #/new — docs-initial-build/04-frontend.md § New game. Every per-game decision lives
 // here, in order: player count, ruleset, faan range, seats. All four wind
 // rows are always shown and always fully selectable, whatever the player
 // count — East+North must be exactly as easy to pick as East+West, so no
@@ -19,7 +19,7 @@ const CHAIRS: readonly Chair[] = [0, 1, 2, 3];
 const WIND_NAMES: Record<Chair, WindName> = { 0: 'East', 1: 'South', 2: 'West', 3: 'North' };
 const WIND_TERM_KEYS: Record<Chair, TermKey> = { 0: 'east', 1: 'south', 2: 'west', 3: 'north' };
 
-// 2 -> East+West, 3 -> East+South+West, 4 -> all four (docs/04-frontend.md
+// 2 -> East+West, 3 -> East+South+West, 4 -> all four (docs-initial-build/04-frontend.md
 // § New game). Pre-filled as a hint only — every row stays fully selectable
 // regardless of player_count.
 const DEFAULT_WINDS: Record<number, readonly Chair[]> = {
@@ -46,7 +46,7 @@ export function NewGame() {
 
     // This route only exists when no game is live — a stale tab landing
     // here anyway gets redirected straight to it, same as Home
-    // (docs/04-frontend.md § Home).
+    // (docs-initial-build/04-frontend.md § Home).
     api.currentGame().then(
       (game) => {
         if (!cancelled) navigate(`#/game/${game.game.id}`);
@@ -162,7 +162,7 @@ export function NewGame() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         // Another tab started a game first — treat it as a redirect rather
-        // than an error (docs/04-frontend.md § Home).
+        // than an error (docs-initial-build/04-frontend.md § Home).
         api
           .currentGame()
           .then((g) => navigate(`#/game/${g.game.id}`))

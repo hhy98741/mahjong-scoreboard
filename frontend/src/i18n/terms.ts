@@ -1,5 +1,5 @@
 // Single source of truth for bilingual vocabulary. Hardcoded by design —
-// see docs/07-terminology.md § Decision. The language toggle switches
+// see docs-initial-build/07-terminology.md § Decision. The language toggle switches
 // mahjong terms only; UI chrome stays English in every mode.
 
 export type Lang = 'en' | 'zh' | 'both';
@@ -63,7 +63,7 @@ export function t(key: TermKey, lang: Lang): string {
 /**
  * The round label above the seating diamond — not a plain t() lookup, since
  * the three modes compose differently ("South Round" / "南圈" / "南圈 South
- * Round"), per the table in docs/07-terminology.md § Rendering.
+ * Round"), per the table in docs-initial-build/07-terminology.md § Rendering.
  */
 export function roundLabel(roundWindIndex: number, lang: Lang): string {
   const term = TERMS[windKey(roundWindIndex)];
@@ -75,7 +75,7 @@ export function roundLabel(roundWindIndex: number, lang: Lang): string {
 /**
  * The wind glyph shown at a chair. In `'both'` mode the Chinese character is
  * the main glyph and the English letter renders as a small superscript —
- * never "South S" side by side (docs/04-frontend.md § Space rules).
+ * never "South S" side by side (docs-initial-build/04-frontend.md § Space rules).
  */
 export function windGlyph(windIndex: number, lang: Lang): { main: string; sup: string | null } {
   const term = TERMS[windKey(windIndex)];

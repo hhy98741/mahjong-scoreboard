@@ -24,7 +24,7 @@ $pdo = Db::connect($config);
 
 const RULESET_NAME = 'Hong Kong Standard';
 
-// docs/01-data-model.md § Seed data - banded doubling table, reference PDF p.10.
+// docs-initial-build/01-data-model.md § Seed data - banded doubling table, reference PDF p.10.
 const POINTS = [
     0 => 1, 1 => 2, 2 => 4, 3 => 8, 4 => 16, 5 => 16, 6 => 16,
     7 => 32, 8 => 32, 9 => 32, 10 => 64, 11 => 64, 12 => 64, 13 => 64,

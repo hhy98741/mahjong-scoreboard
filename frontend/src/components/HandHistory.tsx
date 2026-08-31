@@ -1,5 +1,5 @@
 // Beneath the standings, scrolling independently. Newest first — the API
-// already sorts descending, so no client-side sort. docs/04-frontend.md
+// already sorts descending, so no client-side sort. docs-initial-build/04-frontend.md
 // § Hand history.
 
 import { faanLabel, t } from '../i18n/terms.ts';
