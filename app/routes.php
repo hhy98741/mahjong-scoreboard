@@ -13,6 +13,8 @@ use App\Repo\RulesetRepo;
 use App\Repo\UserRepo;
 use App\Service\AvatarException;
 use App\Service\AvatarService;
+use App\Service\ConflictException;
+use App\Service\GameService;
 
 // Exempt from auth for the whole life of the project — deploy.sh smoke-tests
 // this route and rolls back the deploy on a non-200, so it must never require
@@ -369,5 +371,167 @@ $router->delete('/api/rulesets/{id}', function (Request $request, string $id) us
     }
 
     $repo->delete((int) $id);
+    Response::noContent();
+});
+
+// ---------------------------------------------------------------- games
+
+// GameService owns validation, the eight-step hand transaction, and payload
+// assembly (docs/03-api.md § Games; docs/02-scoring-engine.md). Routes below
+// only parse the request and translate exceptions to HTTP status codes:
+// DomainException -> 422, ConflictException -> 409, a null return -> 404.
+
+$router->post('/api/games', function (Request $request) use ($config): void {
+    $service = new GameService(Db::connect($config));
+    $currentUser = Auth::currentUser($config);
+
+    try {
+        $payload = $service->createGame($request->body, $currentUser['id'] ?? null);
+    } catch (ConflictException $e) {
+        Response::error('conflict', $e->getMessage(), 409);
+        return;
+    } catch (DomainException $e) {
+        Response::error('validation_failed', $e->getMessage(), 422);
+        return;
+    }
+
+    Response::json($payload, 201);
+});
+
+// Registered before /api/games/{id} - the router matches routes in
+// registration order and {id} would otherwise swallow "current" as an id.
+$router->get('/api/games/current', function (Request $request) use ($config): void {
+    $service = new GameService(Db::connect($config));
+    $gameId = $service->findCurrentId();
+    if ($gameId === null) {
+        Response::error('not_found', 'No game in progress.', 404);
+        return;
+    }
+
+    Response::json($service->assemblePayload($gameId));
+});
+
+$router->get('/api/games', function (Request $request) use ($config): void {
+    $service = new GameService(Db::connect($config));
+
+    $filters = [];
+    foreach (['status', 'from', 'to'] as $key) {
+        if (isset($request->query[$key])) {
+            $filters[$key] = (string) $request->query[$key];
+        }
+    }
+    foreach (['player_id', 'player_count', 'limit', 'offset'] as $key) {
+        if (isset($request->query[$key])) {
+            $filters[$key] = (int) $request->query[$key];
+        }
+    }
+
+    Response::json($service->listSummaries($filters));
+});
+
+$router->get('/api/games/{id}', function (Request $request, string $id) use ($config): void {
+    $payload = (new GameService(Db::connect($config)))->assemblePayload((int) $id);
+    if ($payload === null) {
+        Response::error('not_found', 'Game not found.', 404);
+        return;
+    }
+
+    Response::json($payload);
+});
+
+$router->post('/api/games/{id}/hands', function (Request $request, string $id) use ($config): void {
+    $service = new GameService(Db::connect($config));
+    $currentUser = Auth::currentUser($config);
+
+    try {
+        $payload = $service->recordHand((int) $id, $request->body, $currentUser['id'] ?? null);
+    } catch (ConflictException $e) {
+        Response::error('conflict', $e->getMessage(), 409);
+        return;
+    } catch (DomainException $e) {
+        Response::error('validation_failed', $e->getMessage(), 422);
+        return;
+    }
+
+    if ($payload === null) {
+        Response::error('not_found', 'Game not found.', 404);
+        return;
+    }
+
+    Response::json($payload, 201);
+});
+
+$router->delete('/api/games/{id}/hands/last', function (Request $request, string $id) use ($config): void {
+    $service = new GameService(Db::connect($config));
+
+    try {
+        $payload = $service->undoLastHand((int) $id);
+    } catch (ConflictException $e) {
+        Response::error('conflict', $e->getMessage(), 409);
+        return;
+    }
+
+    if ($payload === null) {
+        Response::error('not_found', 'Game not found.', 404);
+        return;
+    }
+
+    Response::json($payload);
+});
+
+$router->post('/api/games/{id}/end', function (Request $request, string $id) use ($config): void {
+    $service = new GameService(Db::connect($config));
+    $status = is_string($request->body['status'] ?? null) ? $request->body['status'] : '';
+
+    try {
+        $payload = $service->endGame((int) $id, $status);
+    } catch (ConflictException $e) {
+        Response::error('conflict', $e->getMessage(), 409);
+        return;
+    } catch (DomainException $e) {
+        Response::error('validation_failed', $e->getMessage(), 422, ['status' => $e->getMessage()]);
+        return;
+    }
+
+    if ($payload === null) {
+        Response::error('not_found', 'Game not found.', 404);
+        return;
+    }
+
+    Response::json($payload);
+});
+
+$router->patch('/api/games/{id}', function (Request $request, string $id) use ($config): void {
+    $service = new GameService(Db::connect($config));
+    $name = is_string($request->body['name'] ?? null) ? $request->body['name'] : '';
+
+    $payload = $service->renameGame((int) $id, $name);
+    if ($payload === null) {
+        Response::error('not_found', 'Game not found.', 404);
+        return;
+    }
+
+    Response::json($payload);
+});
+
+// Admin only (docs/03-api.md § Games), hard delete, requires ?confirm=1 - the
+// one destructive route in the API.
+$router->delete('/api/games/{id}', function (Request $request, string $id) use ($config): void {
+    $currentUser = Auth::currentUser($config);
+    if ($currentUser === null || !$currentUser['is_admin']) {
+        Response::error('forbidden', 'Admin privileges required.', 403);
+        return;
+    }
+    if (($request->query['confirm'] ?? null) !== '1') {
+        Response::error('validation_failed', 'Pass ?confirm=1 to permanently delete this game.', 422, ['confirm' => 'Required.']);
+        return;
+    }
+
+    $deleted = (new GameService(Db::connect($config)))->deleteGame((int) $id);
+    if (!$deleted) {
+        Response::error('not_found', 'Game not found.', 404);
+        return;
+    }
+
     Response::noContent();
 });
