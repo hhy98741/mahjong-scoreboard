@@ -47,7 +47,15 @@ $router = new App\Http\Router();
 
 require __DIR__ . '/routes.php';
 
-$router->dispatch(
-    App\Http\Request::fromGlobals(),
-    $config
-);
+$request = App\Http\Request::fromGlobals();
+
+// /api/health must never touch a session (or the database) - deploy.sh
+// smoke-tests it and rolls back on anything but a bare 200. Starting a
+// session unconditionally would attach a Set-Cookie to every response,
+// health included, so it is skipped entirely for that one route.
+if ($request->method !== 'GET' || $request->path !== '/api/health') {
+    App\Http\Middleware\Auth::start($config);
+    App\Http\Middleware\Auth::guard($request, $config);
+}
+
+$router->dispatch($request, $config);
