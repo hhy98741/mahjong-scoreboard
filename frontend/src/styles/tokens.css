@@ -1,0 +1,38 @@
+/* Tile palette — the source of every color in the app. Dark is the
+   default (a lit TV in a dim room); the light override lives below.
+   docs/04-frontend.md § Color scheme. */
+
+:root {
+  --tile-bone: #f2ead8;
+  --tile-red: #c1272d;
+  --tile-green: #1b8a4b;
+  --tile-blue: #1f5fa8;
+  --tile-gold: #b08a2e;
+  --felt: #12201b;
+
+  --bg: #12201b;
+  --surface: #1b2620;
+  --surface-2: #24322b;
+  --border: #33453b;
+  --text: #f2ead8;
+  --text-dim: #a9b5ac;
+  --accent: #4cc27a;
+  --danger: #e0473f;
+  --info: #4a90d9;
+  --gold: #d9b44a;
+  --positive: var(--accent);
+  --negative: var(--danger);
+}
+
+:root[data-theme='light'] {
+  --bg: #f2ead8;
+  --surface: #ffffff;
+  --surface-2: #f7f1e3;
+  --border: #d8cbae;
+  --text: #1a1614;
+  --text-dim: #6b6257;
+  --accent: #1b8a4b;
+  --danger: #c1272d;
+  --info: #1f5fa8;
+  --gold: #b08a2e;
+}

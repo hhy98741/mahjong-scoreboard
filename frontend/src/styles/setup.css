@@ -1,0 +1,310 @@
+/* #/new and #/setup — docs/04-frontend.md §§ New game, Setup. Both are
+   plain form screens outside the scoreboard grid; they reuse .card,
+   .field, .form-error, .primary-btn, .danger-btn, .modal-* from
+   base.css/scoreboard.css rather than redefining them. */
+
+.setup-page {
+  min-height: 100%;
+  padding-bottom: 3rem;
+}
+
+.setup-body {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+}
+
+.form-hint {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin: 0.4rem 0;
+}
+
+/* ---------------------------------------------------------------- New game */
+
+.new-game-layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.new-game-form .field {
+  margin-bottom: 1.4rem;
+}
+
+.radio-group {
+  display: flex;
+  gap: 1.2rem;
+}
+
+.faan-range-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.seat-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.seat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.seat-row-label {
+  min-width: 8rem;
+  font-weight: 600;
+}
+
+.seat-row-required {
+  color: var(--danger);
+}
+
+.seat-row-usual {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+.seat-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.new-game-preview {
+  position: sticky;
+  top: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+/* ---------------------------------------------------------------- setup tabs */
+
+.setup-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 2rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.setup-tabs button {
+  border-radius: 8px 8px 0 0;
+  border-bottom: none;
+}
+
+.setup-tabs button.tab-active {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.setup-toolbar {
+  margin-bottom: 1.25rem;
+}
+
+.inline-create-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.setup-subheading {
+  margin-top: 2rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ---------------------------------------------------------------- player cards */
+
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.player-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  position: relative;
+}
+
+.player-card.retired {
+  opacity: 0.6;
+}
+
+.player-card-editing {
+  align-items: stretch;
+  text-align: left;
+  cursor: default;
+  grid-column: span 2;
+}
+
+.player-card-avatar {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--player-color, var(--border));
+  align-self: center;
+}
+
+.player-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-card-initials {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--player-color, var(--text));
+}
+
+.player-card-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.player-card-swatch {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+
+.player-card-retired-badge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  padding: 0.15em 0.5em;
+  border-radius: 999px;
+}
+
+.player-card-actions {
+  margin-top: 0.5rem;
+}
+
+/* ---------------------------------------------------------------- rulesets */
+
+.ruleset-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.ruleset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ruleset-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.ruleset-list-item.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ruleset-default-badge {
+  font-size: 0.7rem;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  padding: 0.05em 0.5em;
+}
+
+.ruleset-editor.card {
+  width: auto;
+  max-width: 640px;
+}
+
+.ruleset-editor-row {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.ruleset-editor-row .field {
+  flex: 1;
+}
+
+.points-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.points-table th {
+  text-align: left;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.3em 0.5em;
+  border-bottom: 1px solid var(--border);
+}
+
+.points-table td {
+  padding: 0.25em 0.5em;
+  border-bottom: 1px solid var(--border);
+}
+
+.points-table input[type='number'] {
+  width: 6rem;
+}
+
+.points-preview {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.ruleset-fill-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.fill-linear-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.fill-linear-input {
+  width: 4rem;
+}

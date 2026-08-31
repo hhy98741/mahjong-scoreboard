@@ -10,6 +10,7 @@ use App\Repo\Db;
 use App\Repo\LoginAttemptRepo;
 use App\Repo\PlayerRepo;
 use App\Repo\RulesetRepo;
+use App\Repo\StatsRepo;
 use App\Repo\UserRepo;
 use App\Service\AvatarException;
 use App\Service\AvatarService;
@@ -534,4 +535,68 @@ $router->delete('/api/games/{id}', function (Request $request, string $id) use (
     }
 
     Response::noContent();
+});
+
+// ---------------------------------------------------------------- stats
+
+// Read-only, backing docs/06-history-reports.md via Repo\StatsRepo.
+// player_count defaults to 4 on EVERY stats endpoint (D25) — rate
+// statistics are not comparable across player counts. ?player_count=all
+// blends deliberately.
+$parseStatsFilters = static function (Request $request): array {
+    $filters = ['player_count' => 4];
+
+    if (isset($request->query['from'])) {
+        $filters['from'] = (string) $request->query['from'];
+    }
+    if (isset($request->query['to'])) {
+        $filters['to'] = (string) $request->query['to'];
+    }
+    if (isset($request->query['player_ids']) && $request->query['player_ids'] !== '') {
+        $filters['player_ids'] = array_values(array_filter(
+            array_map(static fn (string $v): int => (int) trim($v), explode(',', (string) $request->query['player_ids'])),
+            static fn (int $id): bool => $id > 0
+        ));
+    }
+    if (isset($request->query['player_count'])) {
+        $raw = (string) $request->query['player_count'];
+        $filters['player_count'] = $raw === 'all' ? 'all' : (int) $raw;
+    }
+    $filters['include_abandoned'] = ($request->query['include_abandoned'] ?? null) === '1';
+
+    return $filters;
+};
+
+$router->get('/api/stats/leaderboard', function (Request $request) use ($config, $parseStatsFilters): void {
+    $filters = $parseStatsFilters($request);
+    Response::json((new StatsRepo(Db::connect($config)))->leaderboard($filters));
+});
+
+$router->get('/api/stats/players/{id}', function (Request $request, string $id) use ($config, $parseStatsFilters): void {
+    $filters = $parseStatsFilters($request);
+    $payload = (new StatsRepo(Db::connect($config)))->playerDetail((int) $id, $filters);
+    if ($payload === null) {
+        Response::error('not_found', 'Player not found.', 404);
+        return;
+    }
+
+    Response::json($payload);
+});
+
+$router->get('/api/stats/flow', function (Request $request) use ($config, $parseStatsFilters): void {
+    Response::json((new StatsRepo(Db::connect($config)))->flow($parseStatsFilters($request)));
+});
+
+$router->get('/api/stats/seats', function (Request $request) use ($config, $parseStatsFilters): void {
+    Response::json((new StatsRepo(Db::connect($config)))->seats($parseStatsFilters($request)));
+});
+
+$router->get('/api/stats/games/{id}/curve', function (Request $request, string $id) use ($config): void {
+    $payload = (new StatsRepo(Db::connect($config)))->gameCurve((int) $id);
+    if ($payload === null) {
+        Response::error('not_found', 'Game not found.', 404);
+        return;
+    }
+
+    Response::json($payload);
 });

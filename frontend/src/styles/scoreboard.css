@@ -1,0 +1,586 @@
+/* The #/game/:id screen. Four regions per docs/04-frontend.md § The
+   Scoreboard: menu bar, seating diamond (top left), standings + hand
+   history (top right, stacked), entry area (bottom, spans both columns). */
+
+.scoreboard-page {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr auto;
+}
+
+/* ---------------------------------------------------------------- menu bar */
+
+.scoreboard-menu {
+  grid-column: 1 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.scoreboard-menu .game-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.scoreboard-menu nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scoreboard-menu nav button,
+.scoreboard-menu nav a {
+  padding: 0.4em 0.8em;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.scoreboard-menu nav button[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- diamond */
+
+.diamond-region {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1.5rem;
+  overflow: auto;
+  border-right: 1px solid var(--border);
+}
+
+.round-label {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.round-label .deal-position {
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 1rem;
+}
+
+.diamond-svg {
+  width: min(100%, 520px);
+  height: auto;
+}
+
+.diamond-fill {
+  fill: var(--tile-green);
+  fill-opacity: 0.12;
+}
+
+.diamond-edge {
+  stroke: var(--gold);
+  stroke-width: 3;
+  fill: none;
+}
+
+.diamond-edge.empty {
+  stroke: var(--border);
+  stroke-width: 2;
+  stroke-dasharray: 6 6;
+}
+
+.chair-name {
+  fill: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.chair-name.empty {
+  display: none;
+}
+
+.chair-wind {
+  fill: var(--text-dim);
+  font-size: 26px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.chair-wind.dealer {
+  fill: var(--gold);
+  font-weight: 800;
+  font-size: 36px;
+}
+
+.chair-wind-sup {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chair-wind.dealer .chair-wind-sup {
+  font-size: 16px;
+}
+
+.dealer-highlight {
+  fill: var(--gold);
+  fill-opacity: 0.15;
+}
+
+.avatar-ring {
+  fill: var(--surface);
+  stroke-width: 3;
+}
+
+.avatar-ring.empty {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 2;
+  opacity: 0.5;
+}
+
+.avatar-initials {
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.opening-dealer-label {
+  fill: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+/* ---------------------------------------------------------------- standings + history */
+
+.right-region {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+}
+
+.standings-panel {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.standings-panel h2,
+.hand-history-panel h2 {
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+}
+
+.standings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.standings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.5rem 0;
+}
+
+.standings-rank {
+  width: 1.6rem;
+  font-size: 1.2rem;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.standings-avatar {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--player-color, var(--border));
+  flex-shrink: 0;
+}
+
+.standings-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-initials-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--player-color, var(--text));
+}
+
+.standings-name {
+  flex: 1;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--player-color, var(--text));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.standings-total {
+  font-size: 2.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.standings-total.positive {
+  color: var(--positive);
+}
+
+.standings-total.negative {
+  color: var(--negative);
+}
+
+.hand-history-panel {
+  padding: 1rem 1.5rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.hand-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hand-row {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 1rem;
+}
+
+.hand-row:last-child {
+  border-bottom: none;
+}
+
+.hand-number {
+  color: var(--text-dim);
+  margin-right: 0.5rem;
+}
+
+.hand-bao-badge {
+  display: inline-block;
+  margin-left: 0.4em;
+  padding: 0.05em 0.5em;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--bg);
+  font-size: 0.8em;
+  font-weight: 700;
+}
+
+.hand-deltas {
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+.hand-deltas .positive {
+  color: var(--positive);
+}
+
+.hand-deltas .negative {
+  color: var(--negative);
+}
+
+/* ---------------------------------------------------------------- entry area */
+
+.entry-region {
+  grid-column: 1 / 3;
+  grid-row: 3;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.85rem 1.5rem;
+}
+
+.entry-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.entry-error {
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.entry-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.entry-label {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  min-width: 4.5rem;
+}
+
+/* ---------------------------------------------------------------- player picker */
+
+.player-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.player-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35em 0.9em 0.35em 0.35em;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+}
+
+.player-btn.selected {
+  border-color: var(--player-color, var(--accent));
+  background: color-mix(in srgb, var(--player-color, var(--accent)) 18%, var(--surface-2));
+}
+
+.player-btn-avatar {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--player-color, var(--border));
+}
+
+.player-btn-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.player-btn-initials {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--player-color, var(--text));
+}
+
+.player-btn-name {
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- faan picker */
+
+.faan-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-width: 30rem;
+}
+
+.faan-btn {
+  min-width: 2.4rem;
+  padding: 0.35em 0;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.faan-btn.selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* ---------------------------------------------------------------- win type + bao */
+
+.entry-row-wintype,
+.entry-row-bao {
+  padding: 0.3rem 0;
+  border-top: 1px dashed var(--border);
+}
+
+.radio-label,
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-weight: 600;
+}
+
+.bao-consequence {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.bao-arrow {
+  color: var(--text-dim);
+}
+
+/* ---------------------------------------------------------------- actions */
+
+.entry-row-actions {
+  padding-top: 0.2rem;
+  gap: 0.75rem;
+}
+
+.primary-btn {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.primary-btn:hover {
+  filter: brightness(1.08);
+}
+
+.danger-btn {
+  background: var(--danger);
+  color: var(--bg);
+  border-color: var(--danger);
+  font-weight: 700;
+}
+
+.record-btn {
+  font-size: 1.05rem;
+  padding: 0.6em 1.6em;
+}
+
+.undo-btn {
+  margin-left: auto;
+}
+
+.game-complete-banner {
+  align-items: center;
+}
+
+.complete-message {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- modals */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 55%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  width: min(560px, 92vw);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal-card h2 {
+  font-size: 1.3rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.confirm-message {
+  font-size: 1.05rem;
+}
+
+.penalty-card .field {
+  margin-bottom: 1rem;
+}
+
+/* ---------------------------------------------------------------- keyboard help */
+
+.kbd-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.kbd-keys {
+  display: flex;
+  gap: 0.3rem;
+  min-width: 11rem;
+}
+
+.kbd-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0.3em 0.5em;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.kbd-desc {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.kbd-extra {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+}
+
+.kbd-note {
+  margin-top: 1rem;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}

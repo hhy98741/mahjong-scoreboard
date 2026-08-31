@@ -1,0 +1,216 @@
+/* Global reset, typography, and the shared page chrome (Login, Home).
+   Design target: a laptop driving a large TV at 1920x1080 — type is large,
+   contrast is high. docs/04-frontend.md. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+#app {
+  height: 100%;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.5em;
+  font-weight: 700;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6em 1.2em;
+  transition: background-color 0.15s ease;
+}
+
+button:hover {
+  background: var(--surface);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5em 0.7em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--info);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--info);
+}
+
+/* ---------------------------------------------------------------- toolbar
+   Shared by Login and Home: app title on the left, language and theme
+   toggles on the right. The Scoreboard's fuller menu bar (§ Menu bar) is
+   styled separately in scoreboard.css. */
+
+.top-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.top-toolbar h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.toolbar-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toolbar-controls button {
+  padding: 0.4em 0.8em;
+  font-size: 0.9rem;
+}
+
+.toolbar-controls button[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- centered page
+   Login's card and Home's loading/error states. */
+
+.centered-page {
+  min-height: calc(100% - 4rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2.5rem;
+  width: min(420px, 100%);
+}
+
+.card h2 {
+  font-size: 1.6rem;
+  margin-bottom: 1.2rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1.2rem;
+}
+
+.field label {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.field input {
+  font-size: 1.1rem;
+  padding: 0.7em 0.9em;
+}
+
+.form-error {
+  color: var(--danger);
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.submit-row button {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 0.7em;
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.submit-row button:hover {
+  filter: brightness(1.08);
+}
+
+/* ---------------------------------------------------------------- Home */
+
+.home-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+.home-targets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.home-target {
+  display: block;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2.5rem 1rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.home-target:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.home-recent {
+  color: var(--text-dim);
+  font-size: 1rem;
+}
+
+.home-recent a {
+  color: var(--text);
+}

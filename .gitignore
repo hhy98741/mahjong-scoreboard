@@ -78,6 +78,7 @@ Icon?
 .claude/.cc-writes/
 .claude/data/
 .claude/logs/
+.claude/memory/
 
 # ---------------------------------------------------------------- windows / linux
 Thumbs.db

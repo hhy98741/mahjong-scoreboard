@@ -4,6 +4,11 @@ A web scoreboard for **offline** Hong Kong mahjong games played in person. The a
 who won each hand, how many **faan**, and how the points moved. It does not simulate tiles
 or gameplay.
 
+## Memory
+
+`.claude/memory/MEMORY.md` (gitignored, local-only) — notes Claude Code keeps across
+sessions on this project.
+
 ## Read this first
 
 Specs live in `docs/`. Build order and the definition of done for each step is in
