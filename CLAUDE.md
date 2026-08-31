@@ -78,6 +78,7 @@ bun run dev            # Vite dev server (proxies /api to the local PHP server)
 bun run build          # production build into dist/
 bun run serve:api      # php -S localhost:8080 -t public_html public_html/router.php
 composer test          # PHPUnit — scoring engine tests must stay green
+bun run test:e2e       # Playwright UI regression suite — see § End-to-end regression tests
 ./deploy/deploy.sh     # rsync build + PHP app to shared hosting (code only)
 ./deploy/migrate.sh    # schema changes - deliberate and separate from deploy
 ./deploy/backup.sh     # database dump + avatar pull
@@ -92,10 +93,58 @@ read the result. Do not use the Claude in Chrome extension for this project: the
 multiple Chrome profiles, only one of which would have the extension, and there is no way to
 target a specific profile when Claude Code connects to Chrome.
 
-Keep Playwright ad hoc — install/run it via `bunx playwright ...` rather than adding it to
-`package.json`/`bun.lock` as a project devDependency, unless asked to make it permanent
-tooling (e.g. for an automated test suite). `bunx playwright install chromium` only needs to
+For a one-off check, keep Playwright ad hoc — install/run it via `bunx playwright ...` rather
+than reaching for the devDependency below. `bunx playwright install chromium` only needs to
 run once per machine; the browser binary is cached under `~/Library/Caches/ms-playwright`.
+
+`playwright` **is** a real devDependency now (`package.json` / `bun.lock`), added specifically
+so `tests/e2e/regression.mjs` resolves — `bunx -p playwright` fails once the script lives
+under the repo root, because the repo's own `node_modules` (vite, preact, …) shadows bunx's
+temp install during module resolution. Don't remove it as unused; it backs that suite. Keep
+using plain `bunx playwright ...` for throwaway one-off scripts outside `tests/e2e/`.
+
+## End-to-end regression tests
+
+`tests/e2e/regression.mjs` is a saved, manually-invoked Playwright suite — not wired into
+`composer test` or any CI (there is none for this project). It drives the real frontend —
+clicks and the documented keyboard shortcuts (`docs/04-frontend.md` § Keyboard shortcuts),
+never the API directly for anything under test — through: Setup player creation, three full
+games (N=4, N=3, and N=2 seated at the *non-default* East+South pair), every win type and
+both 包 flavours (discard-bao and self-pick-bao), a full 4-round wrap, undo/redo of both a
+mid-game hand and the hand that completes a game, and the Tier 1 history reports (Games list,
+Game detail, Leaderboard, Player detail), plus a no-crash smoke pass over the Tier 2/3 tabs.
+
+Every assertion diffs the DOM against an independently-fetched `GET /api/games/{id}` (or
+stats endpoint) rather than recomputing scores or dealer state itself — that math is already
+covered by `composer test` (`GamesIntegrationTest`, `GameStateTest`, `ScoringTest`). This
+suite exists to catch UI/API *wiring* regressions (a button not calling the right endpoint, a
+report rendering the wrong number, the seating diamond misrendering wind rotation or empty
+chairs), not to re-verify the scoring engine.
+
+```bash
+bun run test:e2e        # = bun run tests/e2e/regression.mjs
+```
+
+Requires, all running locally first:
+- `bun run dev` (port 5173) and `bun run serve:api` (port 8080), and the local DB reachable —
+  see [[local-db-needs-sandbox-off]] in memory; direct DB/API access needs the Bash sandbox
+  disabled.
+- One login account with `is_admin=1` — cleanup hard-deletes the games it creates via the
+  admin-only `DELETE /api/games/{id}?confirm=1`:
+  ```bash
+  php bin/create-user.php --username=e2e --display-name="E2E Runner" --admin
+  ```
+  The script defaults to username `e2e`; override with the `MJSB_E2E_USER` / `MJSB_E2E_PASS`
+  env vars if you used a different account, or `MJSB_E2E_BASE` for a non-default Vite URL.
+  Credentials for the account already created for this are in local memory (gitignored), not
+  here — this file is public.
+
+The suite creates its own uniquely-named players (`E2E <name> <run-id>`) each run and cleans
+up after itself (deletes its games, retires its players) — safe to rerun repeatedly. If a
+prior run crashed mid-script, it can leave one `in_progress` or `abandoned` game and some
+active `E2E …` players behind; an `in_progress` game blocks the next run's `POST /api/games`
+with a 409, so delete it first (`DELETE FROM games WHERE status='in_progress'` locally, or
+`DELETE /api/games/{id}?confirm=1` as the admin account).
 
 ## Primary display target
 

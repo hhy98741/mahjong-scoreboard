@@ -405,6 +405,71 @@ Stop when this one report works.
 
 ---
 
+## Phase 11 — Tier 3 reports (optional)
+
+Not one of the ten core phases — the app is complete and deployable without these. Same
+shape as Phase 10: pure addition, one report per session, in any order, whenever there's
+an appetite for more.
+
+### Session summary
+
+```
+Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #10.
+
+Build the session summary. There is no endpoint for this yet — design one, add
+it to the docs/03-api.md § Stats table, then implement.
+
+A "night" is games grouped by calendar date, not by a session id — there is no
+such table. Group in SQL or PHP, whichever reads clearer.
+
+Stop when this one report works.
+```
+
+### Head-to-head
+
+```
+Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #11.
+
+Build head-to-head. There is no endpoint for this yet — design one, add it to
+the docs/03-api.md § Stats table, then implement.
+
+Takes exactly two player ids. Hands played together means both were seated in
+the same game, not necessarily both in the same hand's outcome.
+
+Stop when this one report works.
+```
+
+### Activity heatmap
+
+```
+Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #12.
+
+Build the activity heatmap. There is no endpoint for this yet — design one, add
+it to the docs/03-api.md § Stats table, then implement.
+
+Purely decorative — a calendar grid of days played. Keep the query cheap; this
+one has no reason to be expensive.
+
+Stop when this one report works.
+```
+
+### Export
+
+```
+Read CLAUDE.md, then docs/PLAN.md, then docs/06-history-reports.md report #13.
+
+Build GET /api/stats/export.csv. Design its payload (a CSV, not JSON — note
+that in docs/03-api.md § Stats), add it to that table, then implement.
+
+One row per hand_scores entry: game, date, hand number, player, outcome, faan,
+delta. This is the one Tier 3 report that's cheap and clearly worth doing even
+if the others get skipped.
+
+Stop when this one report works.
+```
+
+---
+
 ## Between every session
 
 ```bash

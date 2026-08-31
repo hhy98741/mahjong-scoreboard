@@ -5,11 +5,13 @@
   "scripts": {
     "dev": "vite --config frontend/vite.config.ts",
     "build": "vite build --config frontend/vite.config.ts",
-    "serve:api": "php -S localhost:8080 -t public_html public_html/router.php"
+    "serve:api": "php -S localhost:8080 -t public_html public_html/router.php",
+    "test:e2e": "bun run tests/e2e/regression.mjs"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",
     "@types/bun": "latest",
+    "playwright": "^1.62.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.2"
   },

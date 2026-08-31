@@ -292,6 +292,21 @@ real games in it to be interesting.
 
 ---
 
+## Phase 11 — Tier 3 reports (optional)
+
+**Read:** `docs/06-history-reports.md` Tier 3
+
+Not one of the ten core phases — the app is complete and deployable without it. Tier 3 is
+explicitly "optional polish" in `06-history-reports.md`: session summary, head-to-head,
+activity heatmap, `GET /api/stats/export.csv`. Same shape as Phase 10 — pure addition,
+`Repo/StatsRepo.php` only, no endpoint specified yet, pick them off in any order whenever
+there's an appetite for more reports.
+
+**Done when:** each report picked up works end to end (endpoint documented in
+`docs/03-api.md` § Stats, UI reachable from `#/history`) and `composer test` stays green.
+
+---
+
 ## Risk notes
 
 - **Phases 3 and 5 carry the whole product.** If the payment math or the dealer rotation
