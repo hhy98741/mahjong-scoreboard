@@ -37,6 +37,7 @@ export function NewGame() {
   const [rulesetId, setRulesetId] = useState<number | null>(null);
   const [minFaan, setMinFaan] = useState(2);
   const [maxFaan, setMaxFaan] = useState(8);
+  const [startingPoints, setStartingPoints] = useState(1500);
   const [winds, setWinds] = useState<Winds>({ 0: null, 1: null, 2: null, 3: null });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -155,6 +156,7 @@ export function NewGame() {
         player_count: playerCount,
         min_faan: minFaan,
         max_faan: maxFaan,
+        starting_points: startingPoints,
         seats: filledWinds.map((wind) => ({ wind, player_id: winds[wind]! })),
       });
       currentGame.value = payload;
@@ -234,6 +236,18 @@ export function NewGame() {
                 ))}
               </select>
             </div>
+          </div>
+
+          <div class="field">
+            <label for="starting-points">Starting points</label>
+            <input
+              id="starting-points"
+              type="number"
+              min={0}
+              step={1}
+              value={startingPoints}
+              onInput={(e) => setStartingPoints(Number((e.target as HTMLInputElement).value))}
+            />
           </div>
 
           <div class="field">

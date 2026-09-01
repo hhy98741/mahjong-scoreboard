@@ -79,17 +79,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-}
-
-.game-card-link {
-  display: block;
   padding: 1rem 1.2rem;
-  text-decoration: none;
-  color: var(--text);
-}
-
-.game-card-link:hover {
-  border-color: var(--accent);
 }
 
 .game-card-header {
@@ -151,6 +141,28 @@
   gap: 1rem;
   color: var(--text-dim);
   font-size: 0.85rem;
+}
+
+.game-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.game-card-action {
+  padding: 0.3em 0.9em;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.game-card-action:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ---------------------------------------------------------------- tables */

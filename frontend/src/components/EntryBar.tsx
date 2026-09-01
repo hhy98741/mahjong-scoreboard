@@ -257,7 +257,7 @@ export function EntryBar({ payload, lang }: EntryBarProps) {
         return;
       }
 
-      if (key === '?') {
+      if (key === '?' && !isComplete) {
         e.preventDefault();
         setHelpOpen(true);
         return;
@@ -269,8 +269,8 @@ export function EntryBar({ payload, lang }: EntryBarProps) {
       }
 
       // Everything past this point records or edits the pending hand, which
-      // has no meaning once the game is over — only Undo and the help
-      // overlay stay live (both handled above).
+      // has no meaning once the game is over — only Undo (Ctrl/Cmd+Z, no
+      // visible button once complete) stays live.
       if (isComplete) return;
 
       if (key === 'Escape') {
@@ -375,19 +375,7 @@ export function EntryBar({ payload, lang }: EntryBarProps) {
         <div class="complete-message">
           {game.status === 'completed' ? 'Game complete' : 'Game ended'} — final standings above.
         </div>
-        <div class="entry-row entry-row-actions">
-          <a class="primary-btn" href="#/new">
-            Start new game
-          </a>
-          <button type="button" class="undo-btn" disabled={!lastHand || submitting} onClick={() => setUndoConfirmOpen(true)}>
-            ↶ Undo hand {lastHand?.hand_number ?? ''}
-          </button>
-          <button type="button" onClick={() => setHelpOpen(true)}>
-            ?
-          </button>
-        </div>
 
-        {helpOpen && <KeyboardHelp onClose={() => setHelpOpen(false)} />}
         {undoConfirmOpen && lastHand && (
           <Confirm
             message={`Undo hand #${lastHand.hand_number}? This reopens the game.`}

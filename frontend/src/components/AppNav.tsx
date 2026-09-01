@@ -18,7 +18,7 @@ export function AppNav() {
   return (
     <header class="app-nav">
       <a href="#/" class="app-nav-brand">
-        Mahjong Scoreboard
+        <img src="/logo.svg" alt="Mahjong Scoreboard" class="app-nav-logo" />
       </a>
       <nav class="app-nav-links">
         {LINKS.map((l) => (

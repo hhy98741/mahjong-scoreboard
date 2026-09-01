@@ -62,91 +62,93 @@ export function SeatingDiamond(props: SeatingDiamondProps) {
   for (const seat of seats) byChair.set(seat.chair as Chair, seat);
 
   return (
-    <div>
+    <div class="diamond-wrap">
       <div class="round-label">
         {roundLabel(roundWind, lang)}
         <div class="deal-position">
           Deal {dealInRound} of {playerCount}
         </div>
       </div>
-      <svg class="diamond-svg" viewBox="0 0 400 400" role="img" aria-label="Seating diamond">
-        <polygon class="diamond-fill" points={`${V_TOP.join(',')} ${V_RIGHT.join(',')} ${V_BOTTOM.join(',')} ${V_LEFT.join(',')}`} />
 
-        <defs>
+      {/* Sized purely from available space: flex:1 gives this a definite
+          height (region height minus round-label), and the svg's
+          max-width/max-height + aspect-ratio fit the largest square that
+          plays in that box — no hardcoded diamond size to tune. */}
+      <div class="diamond-frame">
+        <svg class="diamond-svg" viewBox="0 0 400 400" role="img" aria-label="Seating diamond">
+          <polygon class="diamond-fill" points={`${V_TOP.join(',')} ${V_RIGHT.join(',')} ${V_BOTTOM.join(',')} ${V_LEFT.join(',')}`} />
+
+          <defs>
+            {CHAIRS.map((chair) => {
+              const seat = byChair.get(chair);
+              if (!seat) return null;
+              const [nx, ny] = NAME_POS[chair];
+              return (
+                <clipPath id={`avatar-clip-${chair}`} key={`clip-${chair}`}>
+                  <circle cx={nx} cy={ny} r={26} />
+                </clipPath>
+              );
+            })}
+          </defs>
+
           {CHAIRS.map((chair) => {
             const seat = byChair.get(chair);
-            if (!seat) return null;
+            const [ex1, ey1] = EDGES[chair][0];
+            const [ex2, ey2] = EDGES[chair][1];
+            return <line key={`edge-${chair}`} class={`diamond-edge${seat ? '' : ' empty'}`} x1={ex1} y1={ey1} x2={ex2} y2={ey2} />;
+          })}
+
+          {CHAIRS.map((chair) => {
+            const seat = byChair.get(chair);
+            const currentWindIndex = seat ? seat.current_wind_index : (chair - dealerWindIndex + 4) % 4;
+            const isDealer = currentWindIndex === 0;
+            const glyph = windGlyph(currentWindIndex, lang);
+            const [wx, wy] = WIND_LABEL_POS[chair];
             const [nx, ny] = NAME_POS[chair];
+
             return (
-              <clipPath id={`avatar-clip-${chair}`} key={`clip-${chair}`}>
-                <circle cx={nx} cy={ny} r={26} />
-              </clipPath>
+              <g key={`chair-${chair}`}>
+                {isDealer && <circle class="dealer-highlight" cx={wx} cy={wy} r={34} />}
+                <text class={`chair-wind${isDealer ? ' dealer' : ''}${seat ? '' : ' empty'}`} x={wx} y={wy}>
+                  {glyph.main}
+                  {glyph.sup !== null && (
+                    <tspan class="chair-wind-sup" dx="2" dy="-14">
+                      {glyph.sup}
+                    </tspan>
+                  )}
+                </text>
+
+                {seat && (
+                  <>
+                    <circle class="avatar-ring" cx={nx} cy={ny} r={28} style={{ stroke: seat.player.color }} />
+                    <image
+                      href={seat.player.avatar_url}
+                      x={nx - 26}
+                      y={ny - 26}
+                      width={52}
+                      height={52}
+                      clip-path={`url(#avatar-clip-${chair})`}
+                    />
+                    {seat.player.avatar_url === '/default.svg' && (
+                      <text class="avatar-initials" x={nx} y={ny} style={{ fill: seat.player.color }}>
+                        {initials(seat.player.name)}
+                      </text>
+                    )}
+                    {chair === 0 && (
+                      // Static reference point for the whole game — stacked
+                      // below the avatar. Text pairs the dot so color is never
+                      // the only signal (04-frontend.md § Accessibility).
+                      <text class="opening-dealer-label" x={nx} y={ny + 44}>
+                        ● {t('openingDealer', lang)}
+                      </text>
+                    )}
+                  </>
+                )}
+              </g>
             );
           })}
-        </defs>
-
-        {CHAIRS.map((chair) => {
-          const seat = byChair.get(chair);
-          const [ex1, ey1] = EDGES[chair][0];
-          const [ex2, ey2] = EDGES[chair][1];
-          return <line key={`edge-${chair}`} class={`diamond-edge${seat ? '' : ' empty'}`} x1={ex1} y1={ey1} x2={ex2} y2={ey2} />;
-        })}
-
-        {CHAIRS.map((chair) => {
-          const seat = byChair.get(chair);
-          const currentWindIndex = seat ? seat.current_wind_index : (chair - dealerWindIndex + 4) % 4;
-          const isDealer = currentWindIndex === 0;
-          const glyph = windGlyph(currentWindIndex, lang);
-          const [wx, wy] = WIND_LABEL_POS[chair];
-          const [nx, ny] = NAME_POS[chair];
-
-          return (
-            <g key={`chair-${chair}`}>
-              {isDealer && <circle class="dealer-highlight" cx={wx} cy={wy} r={34} />}
-              <text class={`chair-wind${isDealer ? ' dealer' : ''}${seat ? '' : ' empty'}`} x={wx} y={wy}>
-                {glyph.main}
-                {glyph.sup !== null && (
-                  <tspan class="chair-wind-sup" dx="2" dy="-14">
-                    {glyph.sup}
-                  </tspan>
-                )}
-              </text>
-
-              {seat && (
-                <>
-                  <circle class="avatar-ring" cx={nx} cy={ny} r={28} style={{ stroke: seat.player.color }} />
-                  <image
-                    href={seat.player.avatar_url}
-                    x={nx - 26}
-                    y={ny - 26}
-                    width={52}
-                    height={52}
-                    clip-path={`url(#avatar-clip-${chair})`}
-                  />
-                  {seat.player.avatar_url === '/default.svg' && (
-                    <text class="avatar-initials" x={nx} y={ny} style={{ fill: seat.player.color }}>
-                      {initials(seat.player.name)}
-                    </text>
-                  )}
-                  <text class="chair-name" x={nx} y={ny + 44} style={{ fill: seat.player.color }}>
-                    {seat.player.name}
-                  </text>
-                  {chair === 0 && (
-                    // Static reference point for the whole game — stacked
-                    // below the name rather than beside the avatar, so it
-                    // never overlaps regardless of how long the label runs
-                    // in 'both' mode. Text pairs the dot so color is never
-                    // the only signal (04-frontend.md § Accessibility).
-                    <text class="opening-dealer-label" x={nx} y={ny + 62}>
-                      ● {t('openingDealer', lang)}
-                    </text>
-                  )}
-                </>
-              )}
-            </g>
-          );
-        })}
-      </svg>
+        </svg>
+      </div>
     </div>
   );
 }

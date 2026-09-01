@@ -8,6 +8,7 @@ import { api, ApiError } from '../api.ts';
 import { HandHistory } from '../components/HandHistory.tsx';
 import { ScoreChart } from '../components/ScoreChart.tsx';
 import { lang } from '../store.ts';
+import { gameStatusLabel } from '../types.ts';
 import type { GameCurve, GameStatePayload } from '../types.ts';
 
 interface GameDetailProps {
@@ -53,7 +54,7 @@ export function GameDetail({ id }: GameDetailProps) {
         {game && (
           <>
             <p class="text-dim">
-              {new Date(game.game.started_at).toLocaleString()} · {game.game.player_count} players · {game.game.status.replace('_', ' ')}
+              {new Date(game.game.started_at).toLocaleString()} · {game.game.player_count} players · {gameStatusLabel(game.game.status)}
             </p>
 
             {curve && curve.points.length > 0 && (
@@ -64,9 +65,10 @@ export function GameDetail({ id }: GameDetailProps) {
                     id: p.id,
                     name: p.name,
                     color: p.color,
-                    points: curve.points.map((pt) => pt.totals[String(p.id)] ?? 0),
+                    points: curve.points.map((pt) => game.game.starting_points + (pt.totals[String(p.id)] ?? 0)),
                   }))}
                   verticalLines={curve.round_boundaries.map((hn) => curve.points.findIndex((pt) => pt.hand_number === hn))}
+                  baseline={game.game.starting_points}
                 />
                 <div class="chart-legend">
                   {curve.players.map((p) => (
@@ -93,7 +95,7 @@ export function GameDetail({ id }: GameDetailProps) {
                         <tr key={pt.hand_number}>
                           <td>#{pt.hand_number}</td>
                           {curve.players.map((p) => (
-                            <td key={p.id}>{pt.totals[String(p.id)] ?? 0}</td>
+                            <td key={p.id}>{game.game.starting_points + (pt.totals[String(p.id)] ?? 0)}</td>
                           ))}
                         </tr>
                       ))}

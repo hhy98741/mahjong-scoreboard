@@ -67,6 +67,10 @@ final class GameService
         $playerCount = is_int($input['player_count'] ?? null) ? $input['player_count'] : 4;
         $minFaan = is_int($input['min_faan'] ?? null) ? $input['min_faan'] : 2;
         $maxFaan = is_int($input['max_faan'] ?? null) ? $input['max_faan'] : 8;
+        $startingPoints = is_int($input['starting_points'] ?? null) ? $input['starting_points'] : 1500;
+        if ($startingPoints < 0) {
+            throw new DomainException('starting_points must be 0 or greater.');
+        }
 
         $seatsInput = $input['seats'] ?? null;
         if (!is_array($seatsInput)) {
@@ -118,7 +122,7 @@ final class GameService
             'points' => (object) $ruleset['points'],
         ];
 
-        $gameId = $this->games->create($rulesetId, $rulesetSnapshot, $name, $playerCount, $minFaan, $maxFaan, $seats, $createdByUserId);
+        $gameId = $this->games->create($rulesetId, $rulesetSnapshot, $name, $playerCount, $minFaan, $maxFaan, $startingPoints, $seats, $createdByUserId);
 
         return $this->assemblePayload($gameId);
     }
@@ -402,6 +406,7 @@ final class GameService
             'name' => $game['name'],
             'status' => $game['status'],
             'player_count' => $game['player_count'],
+            'starting_points' => $game['starting_points'],
             'started_at' => self::toIso8601($game['started_at']),
             'ended_at' => $game['ended_at'] !== null ? self::toIso8601($game['ended_at']) : null,
             'seats' => $seats,
@@ -409,7 +414,7 @@ final class GameService
     }
 
     /**
-     * @param array{id:int, name:?string, ruleset_snapshot:array<string,mixed>, status:string, player_count:int, min_faan:int, max_faan:int, started_at:string, ended_at:?string, seats:array<int,int>} $game
+     * @param array{id:int, name:?string, ruleset_snapshot:array<string,mixed>, status:string, player_count:int, min_faan:int, max_faan:int, starting_points:int, started_at:string, ended_at:?string, seats:array<int,int>} $game
      * @param list<array{id:int, hand_number:int, round_wind:int, dealer_wind_index:int, outcome:string, winner_player_id:?int, faan:?int, win_type:?string, discarder_player_id:?int, liable_player_id:?int, base_points:?int, offender_player_id:?int, penalty_per_player:?int, note:?string, created_at:string, scores:array<int,int>}> $handRows ascending by hand_number
      * @return array<string,mixed>
      */
@@ -480,6 +485,7 @@ final class GameService
                 'player_count' => $game['player_count'],
                 'min_faan' => $game['min_faan'],
                 'max_faan' => $game['max_faan'],
+                'starting_points' => $game['starting_points'],
                 'started_at' => self::toIso8601($game['started_at']),
                 'ended_at' => $game['ended_at'] !== null ? self::toIso8601($game['ended_at']) : null,
             ],

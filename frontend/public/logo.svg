@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 332 130" width="332" height="130" role="img" aria-label="Mahjong Scoreboard">
+  <!-- 中 tile -->
+  <rect x="2" y="2" width="96" height="126" rx="20" fill="#F5EFCE" stroke="#D8CBAE" stroke-width="2"/>
+  <text x="50" y="67" text-anchor="middle" dominant-baseline="central"
+        font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Heiti SC','Source Han Sans SC',sans-serif"
+        font-weight="700" font-size="78" fill="#D0342C">中</text>
+
+  <!-- 發 tile -->
+  <rect x="118" y="2" width="96" height="126" rx="20" fill="#F5EFCE" stroke="#D8CBAE" stroke-width="2"/>
+  <text x="166" y="67" text-anchor="middle" dominant-baseline="central"
+        font-family="'PingFang SC','Microsoft YaHei','Noto Sans CJK SC','Heiti SC','Source Han Sans SC',sans-serif"
+        font-weight="700" font-size="62" fill="#3C9B4C">發</text>
+
+  <!-- white dragon (soap) tile -->
+  <rect x="234" y="2" width="96" height="126" rx="20" fill="#F5EFCE" stroke="#D8CBAE" stroke-width="2"/>
+  <rect x="253" y="20" width="58" height="90" rx="10" fill="none" stroke="#2F7FC1" stroke-width="5"/>
+  <rect x="263" y="30" width="38" height="70" rx="6" fill="none" stroke="#3C9B4C" stroke-width="4"/>
+  <circle cx="258" cy="25" r="4" fill="#D0342C"/>
+  <circle cx="306" cy="25" r="4" fill="#D0342C"/>
+  <circle cx="258" cy="105" r="4" fill="#D0342C"/>
+  <circle cx="306" cy="105" r="4" fill="#D0342C"/>
+</svg>

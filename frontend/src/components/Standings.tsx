@@ -7,6 +7,7 @@ import type { Seat } from '../types.ts';
 
 interface StandingsProps {
   seats: Seat[];
+  startingPoints: number;
 }
 
 function initials(name: string): string {
@@ -17,7 +18,7 @@ function initials(name: string): string {
   return `${first.charAt(0)}${(second ?? '').charAt(0)}`.toUpperCase();
 }
 
-export function Standings({ seats }: StandingsProps) {
+export function Standings({ seats, startingPoints }: StandingsProps) {
   // Stable sort keeps chair order for ties (seats already arrives chair-ordered).
   const ordered = [...seats].sort((a, b) => b.total - a.total);
 
@@ -54,7 +55,6 @@ export function Standings({ seats }: StandingsProps) {
       <ul class="standings-list">
         {ordered.map((seat) => {
           const isDefault = seat.player.avatar_url === '/default.svg';
-          const sign = seat.total < 0 ? '−' : '+';
           return (
             <li
               key={seat.player.id}
@@ -76,10 +76,7 @@ export function Standings({ seats }: StandingsProps) {
               <span class="standings-name" style={{ color: seat.player.color }}>
                 {seat.player.name}
               </span>
-              <span class={`standings-total ${seat.total < 0 ? 'negative' : 'positive'}`}>
-                {sign}
-                {Math.abs(seat.total)}
-              </span>
+              <span class={`standings-total ${seat.total < 0 ? 'negative' : 'positive'}`}>{startingPoints + seat.total}</span>
             </li>
           );
         })}

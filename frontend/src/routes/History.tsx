@@ -8,6 +8,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { api, ApiError } from '../api.ts';
 import { lang } from '../store.ts';
 import { StatsFilterBar } from '../components/StatsFilterBar.tsx';
+import { gameStatusLabel } from '../types.ts';
 import type { FeederStats, FlowMatrix, GameSummary, HandRecord, LeaderboardRow, RecordsBoard, SeatLuckRow, StatsFilters, WinTypeStats } from '../types.ts';
 
 type Tab = 'games' | 'leaderboard' | 'flow' | 'seats' | 'records' | 'feeders' | 'winTypes';
@@ -27,7 +28,7 @@ function formatSigned(n: number | null, decimals = 0): string {
 
 export function History() {
   const [tab, setTab] = useState<Tab>('games');
-  const [filters, setFilters] = useState<StatsFilters>({ player_count: 4 });
+  const [filters, setFilters] = useState<StatsFilters>({ player_count: 'all', include_abandoned: true });
   const [lastSessionDate, setLastSessionDate] = useState<string | null>(null);
 
   useEffect(() => {
@@ -136,25 +137,34 @@ function GamesTab({ filters }: { filters: StatsFilters }) {
         const ordered = [...game.seats].sort((a, b) => b.total - a.total);
         return (
           <li class="game-card" key={game.id}>
-            <a href={`#/history/game/${game.id}`} class="game-card-link">
-              <div class="game-card-header">
-                <span class="game-card-date">{new Date(game.started_at).toLocaleDateString()}</span>
-                {game.name && <span class="game-card-name">{game.name}</span>}
-                <span class={`game-status-badge game-status-${game.status}`}>{game.status.replace('_', ' ')}</span>
-              </div>
-              <div class="game-card-seats">
-                {ordered.map((seat, i) => (
-                  <span key={seat.player.id} class={`game-card-seat ${i === 0 ? 'winner' : ''}`} style={{ color: seat.player.color }}>
-                    {seat.player.name} {formatSigned(seat.total)}
-                  </span>
-                ))}
-              </div>
-              <div class="game-card-footer">
-                <span>{game.player_count} players</span>
-                <span>{duration(game.started_at, game.ended_at)}</span>
-                {summary && <span>{summary.winnerName} won by {summary.margin}</span>}
-              </div>
-            </a>
+            <div class="game-card-header">
+              <span class="game-card-date">
+                {new Date(game.started_at).toLocaleDateString()}{' '}
+                {new Date(game.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+              {game.name && <span class="game-card-name">{game.name}</span>}
+              <span class={`game-status-badge game-status-${game.status}`}>{gameStatusLabel(game.status)}</span>
+            </div>
+            <div class="game-card-seats">
+              {ordered.map((seat, i) => (
+                <span key={seat.player.id} class={`game-card-seat ${i === 0 ? 'winner' : ''}`} style={{ color: seat.player.color }}>
+                  {seat.player.name} {game.starting_points + seat.total}
+                </span>
+              ))}
+            </div>
+            <div class="game-card-footer">
+              <span>{game.player_count} players</span>
+              <span>{duration(game.started_at, game.ended_at)}</span>
+              {summary && <span>{summary.winnerName} won by {summary.margin}</span>}
+            </div>
+            <div class="game-card-actions">
+              <a href={`#/history/game/${game.id}`} class="game-card-action">
+                Report
+              </a>
+              <a href={`#/game/${game.id}`} class="game-card-action">
+                Board
+              </a>
+            </div>
           </li>
         );
       })}

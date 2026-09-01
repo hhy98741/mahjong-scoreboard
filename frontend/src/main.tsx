@@ -61,7 +61,7 @@ function App() {
   return (
     <>
       <AppNav />
-      {renderRoute(r)}
+      <div class="app-main">{renderRoute(r)}</div>
     </>
   );
 }

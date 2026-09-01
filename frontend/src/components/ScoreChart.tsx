@@ -15,9 +15,13 @@ interface ScoreChartProps {
   series: Series[];
   verticalLines?: number[]; // x-positions (indices) to mark, e.g. round boundaries
   height?: number;
+  // Reference line + forced-into-domain value: 0 for a cumulative net-points
+  // chart (PlayerDetail), starting_points for a single game's absolute score
+  // curve (GameDetail) — see D30.
+  baseline?: number;
 }
 
-export function ScoreChart({ series, verticalLines = [], height = 240 }: ScoreChartProps) {
+export function ScoreChart({ series, verticalLines = [], height = 240, baseline = 0 }: ScoreChartProps) {
   const width = 800;
   const padding = { top: 12, right: 12, bottom: 12, left: 44 };
   const innerWidth = width - padding.left - padding.right;
@@ -25,18 +29,18 @@ export function ScoreChart({ series, verticalLines = [], height = 240 }: ScoreCh
 
   const maxLen = Math.max(1, ...series.map((s) => s.points.length));
   const allValues = series.flatMap((s) => s.points);
-  const dataMax = allValues.length > 0 ? Math.max(...allValues, 0) : 0;
-  const dataMin = allValues.length > 0 ? Math.min(...allValues, 0) : 0;
+  const dataMax = allValues.length > 0 ? Math.max(...allValues, baseline) : baseline;
+  const dataMin = allValues.length > 0 ? Math.min(...allValues, baseline) : baseline;
   const range = dataMax - dataMin || 1;
 
   const xAt = (i: number): number => padding.left + (maxLen <= 1 ? 0 : (i / (maxLen - 1)) * innerWidth);
   const yAt = (v: number): number => padding.top + innerHeight - ((v - dataMin) / range) * innerHeight;
 
-  const zeroY = yAt(0);
+  const baselineY = yAt(baseline);
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} class="score-chart" role="img" aria-label="Cumulative points chart">
-      <line x1={padding.left} y1={zeroY} x2={width - padding.right} y2={zeroY} class="score-chart-zero" />
+      <line x1={padding.left} y1={baselineY} x2={width - padding.right} y2={baselineY} class="score-chart-zero" />
       {verticalLines.map((x) => (
         <line key={x} x1={xAt(x)} y1={padding.top} x2={xAt(x)} y2={height - padding.bottom} class="score-chart-boundary" />
       ))}

@@ -32,8 +32,12 @@ export function Home() {
         if (cancelled) return;
         setChecking(false);
         if (err instanceof ApiError && err.status === 404) {
+          // No status filter: this branch only runs once currentGame() has
+          // 404'd (no in_progress game), so every game returned here is
+          // either completed or abandoned ("ended early") — both belong in
+          // "Recent games".
           api
-            .games({ status: 'completed', limit: 5 })
+            .games({ limit: 5 })
             .then((rows) => {
               if (!cancelled) setRecentGames(rows);
             })
@@ -69,7 +73,9 @@ export function Home() {
             {recentGames.map((game) => (
               <li key={game.id}>
                 <a href={`#/history/game/${game.id}`}>
-                  {new Date(game.started_at).toLocaleDateString()} — {summarizeRecent(game)}
+                  {new Date(game.started_at).toLocaleDateString()}{' '}
+                  {new Date(game.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} —{' '}
+                  {summarizeRecent(game)}
                 </a>
               </li>
             ))}

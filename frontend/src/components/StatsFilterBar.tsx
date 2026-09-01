@@ -78,7 +78,7 @@ export function StatsFilterBar({ value, onChange, lastSessionDate }: StatsFilter
           checked={value.include_abandoned ?? false}
           onChange={(e) => onChange({ ...value, include_abandoned: (e.target as HTMLInputElement).checked })}
         />
-        Include abandoned games
+        Include games ended early
       </label>
     </div>
   );

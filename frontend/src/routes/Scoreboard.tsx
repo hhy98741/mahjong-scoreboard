@@ -92,7 +92,7 @@ export function Scoreboard({ id }: ScoreboardProps) {
       </div>
 
       <div class="right-region">
-        <Standings seats={payload.seats} />
+        <Standings seats={payload.seats} startingPoints={payload.game.starting_points} />
         <HandHistory hands={payload.hands} seats={payload.seats} lang={lang.value} />
       </div>
 
@@ -102,7 +102,7 @@ export function Scoreboard({ id }: ScoreboardProps) {
 
       {endConfirmOpen && (
         <Confirm
-          message="End this game now? The game and its scores stay recorded, but it will be marked abandoned rather than completed."
+          message="End this game now? The game and its scores stay recorded, but it will be marked as ended early rather than completed."
           confirmLabel="End game"
           danger
           onConfirm={() => void endGame()}

@@ -30,11 +30,11 @@ final class GameRepo
         return $id === false ? null : (int) $id;
     }
 
-    /** @return array{id:int, name:?string, ruleset_id:?int, ruleset_snapshot:array<string,mixed>, status:string, player_count:int, min_faan:int, max_faan:int, started_at:string, ended_at:?string, seats:array<int,int>}|null */
+    /** @return array{id:int, name:?string, ruleset_id:?int, ruleset_snapshot:array<string,mixed>, status:string, player_count:int, min_faan:int, max_faan:int, starting_points:int, started_at:string, ended_at:?string, seats:array<int,int>}|null */
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, name, ruleset_id, ruleset_snapshot, status, player_count, min_faan, max_faan, started_at, ended_at
+            'SELECT id, name, ruleset_id, ruleset_snapshot, status, player_count, min_faan, max_faan, starting_points, started_at, ended_at
              FROM games WHERE id = ?'
         );
         $stmt->execute([$id]);
@@ -48,12 +48,12 @@ final class GameRepo
      * Row-locks the game for the duration of the eight-step hand transaction
      * (docs-initial-build/03-api.md § POST /api/games/{id}/hands, step 1).
      *
-     * @return array{id:int, name:?string, ruleset_id:?int, ruleset_snapshot:array<string,mixed>, status:string, player_count:int, min_faan:int, max_faan:int, started_at:string, ended_at:?string, seats:array<int,int>}|null
+     * @return array{id:int, name:?string, ruleset_id:?int, ruleset_snapshot:array<string,mixed>, status:string, player_count:int, min_faan:int, max_faan:int, starting_points:int, started_at:string, ended_at:?string, seats:array<int,int>}|null
      */
     public function lockForUpdate(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, name, ruleset_id, ruleset_snapshot, status, player_count, min_faan, max_faan, started_at, ended_at
+            'SELECT id, name, ruleset_id, ruleset_snapshot, status, player_count, min_faan, max_faan, starting_points, started_at, ended_at
              FROM games WHERE id = ? FOR UPDATE'
         );
         $stmt->execute([$id]);
@@ -73,14 +73,15 @@ final class GameRepo
         int $playerCount,
         int $minFaan,
         int $maxFaan,
+        int $startingPoints,
         array $seats,
         ?int $createdByUserId
     ): int {
         $this->pdo->beginTransaction();
         try {
             $stmt = $this->pdo->prepare(
-                'INSERT INTO games (name, ruleset_id, ruleset_snapshot, player_count, min_faan, max_faan, created_by_user_id)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO games (name, ruleset_id, ruleset_snapshot, player_count, min_faan, max_faan, starting_points, created_by_user_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $name,
@@ -89,6 +90,7 @@ final class GameRepo
                 $playerCount,
                 $minFaan,
                 $maxFaan,
+                $startingPoints,
                 $createdByUserId,
             ]);
             $gameId = (int) $this->pdo->lastInsertId();
@@ -197,7 +199,7 @@ final class GameRepo
 
     /**
      * @param array<string,mixed> $row
-     * @return array{id:int, name:?string, ruleset_id:?int, ruleset_snapshot:array<string,mixed>, status:string, player_count:int, min_faan:int, max_faan:int, started_at:string, ended_at:?string, seats:array<int,int>}
+     * @return array{id:int, name:?string, ruleset_id:?int, ruleset_snapshot:array<string,mixed>, status:string, player_count:int, min_faan:int, max_faan:int, starting_points:int, started_at:string, ended_at:?string, seats:array<int,int>}
      */
     private function hydrate(array $row): array
     {
@@ -219,6 +221,7 @@ final class GameRepo
             'player_count' => (int) $row['player_count'],
             'min_faan' => (int) $row['min_faan'],
             'max_faan' => (int) $row['max_faan'],
+            'starting_points' => (int) $row['starting_points'],
             'started_at' => (string) $row['started_at'],
             'ended_at' => $row['ended_at'] !== null ? (string) $row['ended_at'] : null,
             'seats' => $seats,

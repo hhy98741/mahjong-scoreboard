@@ -3,6 +3,14 @@
 // in the frontend, never on the wire.
 
 export type GameStatus = 'in_progress' | 'completed' | 'abandoned';
+
+/** Display label for a game status. 'abandoned' reads as "ended early" — a
+ * manual early finish, not a cancellation or forfeit — everywhere the status
+ * is shown to a user. */
+export function gameStatusLabel(status: GameStatus): string {
+  if (status === 'abandoned') return 'ended early';
+  return status.replace('_', ' ');
+}
 export type Outcome = 'win' | 'draw' | 'penalty';
 export type WinType = 'discard' | 'self_pick';
 export type WindName = 'East' | 'South' | 'West' | 'North';
@@ -49,6 +57,7 @@ export interface GameInfo {
   player_count: number;
   min_faan: number;
   max_faan: number;
+  starting_points: number; // D30 — display only; seat.total below stays net for ranking
   started_at: string;
   ended_at: string | null;
 }
@@ -121,6 +130,7 @@ export interface GameSummary {
   name: string | null;
   status: GameStatus;
   player_count: number;
+  starting_points: number;
   started_at: string;
   ended_at: string | null;
   seats: GameSummarySeat[];
@@ -149,6 +159,7 @@ export interface GameCreateRequest {
   player_count: number;
   min_faan: number;
   max_faan: number;
+  starting_points: number;
   seats: { wind: number; player_id: number }[];
 }
 

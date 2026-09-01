@@ -3,7 +3,7 @@
    history (top right, stacked), entry area (bottom, spans both columns). */
 
 .scoreboard-page {
-  height: 100vh;
+  height: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto 1fr auto;
@@ -59,8 +59,21 @@
   border-right: 1px solid var(--border);
 }
 
+/* Fills .diamond-region's full content box (both dimensions must be
+   definite for .diamond-frame's flex:1 and .diamond-svg's percentages
+   below to have anything to resolve against — an auto-sized ancestor here
+   silently falls back to the svg's 300px replaced-element default). */
+.diamond-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .round-label {
-  font-size: 1.4rem;
+  font-size: 1.9rem;
   font-weight: 700;
   margin-bottom: 0.75rem;
   text-align: center;
@@ -69,12 +82,30 @@
 .round-label .deal-position {
   color: var(--text-dim);
   font-weight: 400;
-  font-size: 1rem;
+  font-size: 1.2rem;
+}
+
+/* Takes all the vertical space .diamond-wrap has left after round-label,
+   and centers .diamond-svg inside it — the box .diamond-svg fits itself
+   into below. */
+.diamond-frame {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .diamond-svg {
-  width: min(100%, 520px);
+  /* Square (viewBox 400x400). No hardcoded size: grows to the largest
+     square that fits inside .diamond-frame, on either width or height,
+     whichever runs out first — same mechanism as object-fit: contain. */
+  width: auto;
   height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
 }
 
 .diamond-fill {
@@ -92,17 +123,6 @@
   stroke: var(--border);
   stroke-width: 2;
   stroke-dasharray: 6 6;
-}
-
-.chair-name {
-  fill: var(--text);
-  font-size: 15px;
-  font-weight: 600;
-  text-anchor: middle;
-}
-
-.chair-name.empty {
-  display: none;
 }
 
 .chair-wind {
@@ -337,8 +357,12 @@
 }
 
 .entry-label {
+  /* No font-size here: `rem` resolves against the root <html> element's
+     16px default, not body's 18px, so a `rem` value would end up smaller
+     than the plain inherited 18px that .radio-label/.checkbox-label get
+     from body — inherit the same way they do instead. */
   color: var(--text-dim);
-  font-size: 0.85rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   min-width: 4.5rem;
@@ -404,12 +428,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  max-width: 30rem;
+  flex: 1;
 }
 
 .faan-btn {
+  flex: 0 0 auto;
   min-width: 2.4rem;
-  padding: 0.35em 0;
+  padding: 0.35em 0.7em;
   border-radius: 8px;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -464,6 +489,7 @@
 }
 
 .primary-btn:hover {
+  background: var(--accent);
   filter: brightness(1.08);
 }
 
