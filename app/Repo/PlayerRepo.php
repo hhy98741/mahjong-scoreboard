@@ -17,10 +17,10 @@ final class PlayerRepo
     {
     }
 
-    /** @return list<array{id:int, name:string, avatar_path:?string, color:string, is_active:bool}> */
+    /** @return list<array{id:int, name:string, avatar_path:?string, color:string, is_active:bool, user_id:?int}> */
     public function all(bool $includeInactive): array
     {
-        $sql = 'SELECT id, name, avatar_path, color, is_active FROM players';
+        $sql = 'SELECT id, name, avatar_path, color, is_active, user_id FROM players';
         if (!$includeInactive) {
             $sql .= ' WHERE is_active = 1';
         }
@@ -31,17 +31,37 @@ final class PlayerRepo
         return array_map($this->hydrate(...), $stmt->fetchAll());
     }
 
-    /** @return array{id:int, name:string, avatar_path:?string, color:string, is_active:bool}|null */
+    /** @return array{id:int, name:string, avatar_path:?string, color:string, is_active:bool, user_id:?int}|null */
     public function find(int $id): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT id, name, avatar_path, color, is_active FROM players WHERE id = ?');
+        $stmt = $this->pdo->prepare('SELECT id, name, avatar_path, color, is_active, user_id FROM players WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
 
         return $row === false ? null : $this->hydrate($row);
     }
 
-    /** @return array{id:int, name:string, avatar_path:?string, color:string, is_active:bool} */
+    // Distinct from update() because null is a meaningful target value here
+    // ("unlink"), not "leave unchanged" as it is for every field in update().
+    // D29: a player links to at most one user; uq_players_user_id is the
+    // integrity guarantee, this pre-check just gives a clean error message.
+    /** @return array{id:int, name:string, avatar_path:?string, color:string, is_active:bool, user_id:?int} */
+    public function linkUser(int $id, ?int $userId): array
+    {
+        if ($userId !== null) {
+            $stmt = $this->pdo->prepare('SELECT id FROM players WHERE user_id = ? AND id != ?');
+            $stmt->execute([$userId, $id]);
+            if ($stmt->fetch() !== false) {
+                throw new DomainException('That login is already linked to another player.');
+            }
+        }
+
+        $this->pdo->prepare('UPDATE players SET user_id = ? WHERE id = ?')->execute([$userId, $id]);
+
+        return $this->find($id);
+    }
+
+    /** @return array{id:int, name:string, avatar_path:?string, color:string, is_active:bool, user_id:?int} */
     public function create(string $name, ?string $color): array
     {
         $resolvedColor = $color ?? $this->nextDefaultColor();
@@ -56,7 +76,7 @@ final class PlayerRepo
         return $this->find((int) $this->pdo->lastInsertId());
     }
 
-    /** @return array{id:int, name:string, avatar_path:?string, color:string, is_active:bool} */
+    /** @return array{id:int, name:string, avatar_path:?string, color:string, is_active:bool, user_id:?int} */
     public function update(int $id, ?string $name, ?string $color, ?bool $isActive): array
     {
         $fields = [];
@@ -130,7 +150,7 @@ final class PlayerRepo
 
     /**
      * @param array<string, mixed> $row
-     * @return array{id:int, name:string, avatar_path:?string, color:string, is_active:bool}
+     * @return array{id:int, name:string, avatar_path:?string, color:string, is_active:bool, user_id:?int}
      */
     private function hydrate(array $row): array
     {
@@ -140,6 +160,7 @@ final class PlayerRepo
             'avatar_path' => $row['avatar_path'] !== null ? (string) $row['avatar_path'] : null,
             'color' => (string) $row['color'],
             'is_active' => (bool) $row['is_active'],
+            'user_id' => $row['user_id'] !== null ? (int) $row['user_id'] : null,
         ];
     }
 }

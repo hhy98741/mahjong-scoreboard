@@ -70,6 +70,30 @@ input {
   padding: 0.5em 0.7em;
 }
 
+/* The generic padding above squashes a native color swatch down to a thin
+   sliver; drop it here so the swatch fills the whole box with the actual
+   selected color instead. */
+input[type='color'] {
+  width: 3.2rem;
+  height: 2.4rem;
+  padding: 0.15rem;
+  cursor: pointer;
+}
+
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+input[type='color']::-moz-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
 :focus-visible {
   outline: 3px solid var(--info);
   outline-offset: 2px;
@@ -79,10 +103,10 @@ a {
   color: var(--info);
 }
 
-/* ---------------------------------------------------------------- toolbar
-   Shared by Login and Home: app title on the left, language and theme
-   toggles on the right. The Scoreboard's fuller menu bar (§ Menu bar) is
-   styled separately in scoreboard.css. */
+/* ---------------------------------------------------------------- page header
+   Every route's own title row - just the page name now (and, on Scoreboard,
+   its fuller menu bar, styled separately in scoreboard.css). All navigation
+   lives in .app-nav below instead, rendered once by main.tsx. */
 
 .top-toolbar {
   display: flex;
@@ -97,19 +121,95 @@ a {
   margin: 0;
 }
 
-.toolbar-controls {
+/* ---------------------------------------------------------------- app nav
+   Persistent top bar (AppNav.tsx), identical on every authenticated page:
+   brand on the left (always links home), primary links, then ProfileMenu. */
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-nav-brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.app-nav-links {
   display: flex;
   gap: 0.5rem;
+  flex: 1;
 }
 
-.toolbar-controls button {
+.app-nav-link {
   padding: 0.4em 0.8em;
   font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--text-dim);
+  border-radius: 6px;
 }
 
-.toolbar-controls button[aria-pressed='true'] {
-  border-color: var(--accent);
+.app-nav-link.active {
   color: var(--accent);
+  font-weight: 600;
+}
+
+.profile-menu {
+  position: relative;
+  /* Bridges the visual gap to .profile-menu-dropdown into this element's own
+     hover box, so moving the cursor from the trigger down to the dropdown
+     doesn't cross dead space and drop :hover along the way. */
+  padding-bottom: 0.25rem;
+}
+
+.profile-menu-trigger {
+  display: inline-block;
+  padding: 0.4em 0.8em;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.profile-menu-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-width: 8rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 20;
+  padding: 0.25rem;
+}
+
+.profile-menu:hover .profile-menu-dropdown,
+.profile-menu:focus-within .profile-menu-dropdown {
+  display: block;
+}
+
+.profile-menu-dropdown button {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 0.5em 0.75em;
+}
+
+.profile-menu-dropdown button:hover {
+  background: var(--surface-2);
 }
 
 /* ---------------------------------------------------------------- centered page
@@ -153,10 +253,46 @@ a {
   padding: 0.7em 0.9em;
 }
 
+/* Same specificity as .field input above and declared later, so it would
+   otherwise win and re-pad the swatch back down to a sliver. */
+.field input[type='color'] {
+  padding: 0.15rem;
+}
+
 .form-error {
   color: var(--danger);
   font-size: 0.95rem;
   margin-bottom: 1rem;
+}
+
+/* ---------------------------------------------------------------- password requirements
+   Live checklist rendered under a "new password" field - see
+   PasswordRequirements.tsx / passwordPolicy.ts. */
+
+.password-requirements {
+  list-style: none;
+  margin: -0.6rem 0 1.2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.password-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.password-requirements .requirement-check {
+  width: 1.1em;
+  text-align: center;
+}
+
+.password-requirements li.requirement-met {
+  color: var(--positive);
 }
 
 .submit-row button {
@@ -181,36 +317,58 @@ a {
   padding: 3rem 2rem;
 }
 
-.home-targets {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin: 2rem 0;
-}
-
-.home-target {
+.home-new-game {
   display: block;
   text-align: center;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 2.5rem 1rem;
-  font-size: 1.4rem;
-  font-weight: 600;
+  padding: 3rem 1rem;
+  font-size: 1.8rem;
+  font-weight: 700;
   text-decoration: none;
-  color: var(--text);
-}
-
-.home-target:hover {
-  border-color: var(--accent);
   color: var(--accent);
+  margin: 2rem 0;
 }
 
-.home-recent {
+.home-new-game:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.home-recent-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.home-recent-header a {
+  font-size: 0.9rem;
+}
+
+.home-recent-heading {
   color: var(--text-dim);
   font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0;
 }
 
-.home-recent a {
+.home-recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.home-recent-list a {
   color: var(--text);
+  text-decoration: none;
+}
+
+.home-recent-list a:hover {
+  color: var(--accent);
 }

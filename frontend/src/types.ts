@@ -20,6 +20,7 @@ export interface Player {
   color: string;
   avatar_url: string;
   is_active: boolean;
+  user_id: number | null; // D29: optional link to a login, admin-managed.
 }
 
 export interface Ruleset {
@@ -161,6 +162,21 @@ export interface PlayerUpdateRequest {
   name?: string;
   color?: string;
   is_active?: boolean;
+  user_id?: number | null; // admin-only; present-or-absent distinguishes "leave" from "set".
+}
+
+// POST/PATCH /api/users - admin only (D29).
+export interface UserCreateRequest {
+  username: string;
+  display_name: string;
+  password: string;
+  is_admin?: boolean;
+}
+
+export interface UserUpdateRequest {
+  username?: string;
+  display_name?: string;
+  is_admin?: boolean;
 }
 
 // POST/PUT /api/rulesets — docs-initial-build/03-api.md § Rulesets. `points` must carry a

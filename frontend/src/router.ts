@@ -11,6 +11,7 @@ export type Route =
   | { name: 'home' }
   | { name: 'new' }
   | { name: 'setup' }
+  | { name: 'profile' }
   | { name: 'game'; id: number }
   | { name: 'history' }
   | { name: 'historyGame'; id: number }
@@ -23,6 +24,7 @@ function parse(hash: string): Route {
   if (path === '/') return { name: 'home' };
   if (path === '/new') return { name: 'new' };
   if (path === '/setup') return { name: 'setup' };
+  if (path === '/profile') return { name: 'profile' };
   if (path === '/history') return { name: 'history' };
   const gameMatch = /^\/game\/(\d+)$/.exec(path);
   if (gameMatch) return { name: 'game', id: Number(gameMatch[1]) };

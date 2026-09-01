@@ -8,14 +8,10 @@ import { SeatingDiamond } from '../components/SeatingDiamond.tsx';
 import { Standings } from '../components/Standings.tsx';
 import { api, ApiError } from '../api.ts';
 import { navigate } from '../router.ts';
-import { currentGame, lang, theme } from '../store.ts';
+import { currentGame, lang } from '../store.ts';
 
 interface ScoreboardProps {
   id: number;
-}
-
-function cycleLang(): void {
-  lang.value = lang.value === 'both' ? 'en' : lang.value === 'en' ? 'zh' : 'both';
 }
 
 export function Scoreboard({ id }: ScoreboardProps) {
@@ -78,14 +74,6 @@ export function Scoreboard({ id }: ScoreboardProps) {
       <header class="scoreboard-menu">
         <span class="game-name">{payload.game.name ?? `Game #${payload.game.id}`}</span>
         <nav>
-          <a href="#/history">History</a>
-          <a href="#/setup">Setup</a>
-          <button onClick={cycleLang} title="Language">
-            {lang.value === 'both' ? '中/EN' : lang.value === 'en' ? 'EN' : '中'}
-          </button>
-          <button onClick={() => (theme.value = theme.value === 'dark' ? 'light' : 'dark')}>
-            {theme.value === 'dark' ? 'Light' : 'Dark'}
-          </button>
           <button disabled={payload.game.status !== 'in_progress' || ending} onClick={() => setEndConfirmOpen(true)}>
             End game
           </button>

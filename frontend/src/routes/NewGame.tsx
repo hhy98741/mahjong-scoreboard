@@ -184,14 +184,6 @@ export function NewGame() {
 
   return (
     <div class="setup-page">
-      <header class="top-toolbar">
-        <h1>New game</h1>
-        <div class="toolbar-controls">
-          <a href="#/">Home</a>
-          <a href="#/setup">Setup</a>
-        </div>
-      </header>
-
       <form class="new-game-layout" onSubmit={(e) => void onSubmit(e)}>
         <div class="new-game-form">
           <div class="field">

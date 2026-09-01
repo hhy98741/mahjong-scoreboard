@@ -22,6 +22,8 @@ import type {
   SeatLuckRow,
   StatsFilters,
   User,
+  UserCreateRequest,
+  UserUpdateRequest,
   WinTypeStats,
 } from './types.ts';
 
@@ -126,6 +128,13 @@ export const api = {
     request('POST', '/api/auth/login', { username, password }),
   logout: (): Promise<null> => request('POST', '/api/auth/logout'),
   me: (): Promise<User> => request('GET', '/api/auth/me'),
+  changeMyPassword: (currentPassword: string, newPassword: string): Promise<null> =>
+    request('PATCH', '/api/auth/password', { current_password: currentPassword, new_password: newPassword }),
+
+  listUsers: (): Promise<User[]> => request('GET', '/api/users'),
+  createUser: (body: UserCreateRequest): Promise<User> => request('POST', '/api/users', body),
+  updateUser: (id: number, body: UserUpdateRequest): Promise<User> => request('PATCH', `/api/users/${id}`, body),
+  resetUserPassword: (id: number, password: string): Promise<null> => request('POST', `/api/users/${id}/password`, { password }),
 
   players: (includeInactive = false): Promise<Player[]> =>
     request('GET', `/api/players${includeInactive ? '?include_inactive=1' : ''}`),

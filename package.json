@@ -6,7 +6,8 @@
     "dev": "vite --config frontend/vite.config.ts",
     "build": "vite build --config frontend/vite.config.ts",
     "serve:api": "php -S localhost:8080 -t public_html public_html/router.php",
-    "test:e2e": "bun run tests/e2e/regression.mjs"
+    "test:e2e": "bun run tests/e2e/regression.mjs",
+    "demo": "bun run tests/e2e/demo.mjs"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",

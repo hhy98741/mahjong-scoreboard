@@ -18,6 +18,7 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
+use App\Domain\PasswordPolicy;
 use App\Repo\Db;
 use App\Repo\UserRepo;
 
@@ -70,8 +71,8 @@ if ($users->findByUsername($username) !== null) {
 $password = readHiddenPassword('Password: ');
 $confirm = readHiddenPassword('Confirm password: ');
 
-if ($password === '') {
-    fwrite(STDERR, "Password cannot be empty.\n");
+if (!PasswordPolicy::isValid($password)) {
+    fwrite(STDERR, PasswordPolicy::describeViolations($password) . "\n");
     exit(1);
 }
 

@@ -196,11 +196,14 @@ async function login(page) {
 
 async function setEnglish(page) {
   // Default lang mode is 'both' (zh+en glyphs mixed) — switch to 'en' once
-  // so every downstream text assertion is unambiguous.
+  // so every downstream text assertion is unambiguous. The toggle now lives
+  // on the #/profile page (AppNav's Profile item), not a top-bar button.
+  await page.click('.profile-menu-trigger');
+  await page.waitForSelector('.profile-page');
   const btn = page.locator('button[title="Language"]').first();
   for (let i = 0; i < 3; i++) {
     const label = (await btn.innerText()).trim();
-    if (label === 'EN') return;
+    if (label === 'Language: EN') return;
     await btn.click();
     await page.waitForTimeout(50);
   }
@@ -208,13 +211,9 @@ async function setEnglish(page) {
 }
 
 async function goHome(page) {
-  // The Scoreboard's nav has no direct Home link (only History / Setup) —
-  // hop through Setup first when that's where we are.
-  if ((await page.locator('a:has-text("Home")').count()) === 0) {
-    await page.click('a:has-text("Setup")');
-    await page.waitForSelector('.setup-tabs');
-  }
-  await page.click('a:has-text("Home")');
+  // AppNav's brand logo (top-left, every authenticated page) is the only way
+  // home now — the nav's own link list is New game / History / Setup only.
+  await page.click('.app-nav-brand');
   await page.waitForTimeout(100);
 }
 

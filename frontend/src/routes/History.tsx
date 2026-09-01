@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'preact/hooks';
 import { api, ApiError } from '../api.ts';
-import { lang, theme } from '../store.ts';
+import { lang } from '../store.ts';
 import { StatsFilterBar } from '../components/StatsFilterBar.tsx';
 import type { FeederStats, FlowMatrix, GameSummary, HandRecord, LeaderboardRow, RecordsBoard, SeatLuckRow, StatsFilters, WinTypeStats } from '../types.ts';
 
@@ -14,10 +14,6 @@ type Tab = 'games' | 'leaderboard' | 'flow' | 'seats' | 'records' | 'feeders' | 
 type SortKey = 'game_win_rate' | 'points_per_hand' | 'net_points' | 'games' | 'hands' | 'hand_win_rate' | 'avg_faan';
 
 const MIN_GAMES_FOR_RATES = 5;
-
-function cycleLang(): void {
-  lang.value = lang.value === 'both' ? 'en' : lang.value === 'en' ? 'zh' : 'both';
-}
 
 function formatRate(rate: number | null): string {
   return rate === null ? '—' : `${Math.round(rate * 100)}%`;
@@ -43,19 +39,6 @@ export function History() {
 
   return (
     <div class="history-page">
-      <header class="top-toolbar">
-        <h1>History</h1>
-        <div class="toolbar-controls">
-          <a href="#/">Home</a>
-          <button onClick={cycleLang} title="Language">
-            {lang.value === 'both' ? '中/EN' : lang.value === 'en' ? 'EN' : '中'}
-          </button>
-          <button onClick={() => (theme.value = theme.value === 'dark' ? 'light' : 'dark')}>
-            {theme.value === 'dark' ? 'Light' : 'Dark'}
-          </button>
-        </div>
-      </header>
-
       <div class="setup-tabs">
         <button type="button" class={tab === 'games' ? 'tab-active' : ''} aria-pressed={tab === 'games'} onClick={() => setTab('games')}>
           Games

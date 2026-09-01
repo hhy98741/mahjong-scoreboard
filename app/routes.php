@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\DomainException;
+use App\Domain\PasswordPolicy;
 use App\Http\Middleware\Auth;
 use App\Http\Request;
 use App\Http\Response;
@@ -88,11 +89,37 @@ $router->get('/api/auth/me', function (Request $request) use ($config, $authUser
     Response::json($authUserPayload($user));
 });
 
+// Self-service password change - the one place a current-password check is
+// required, since every admin-only route below is already gated on is_admin.
+$router->patch('/api/auth/password', function (Request $request) use ($config): void {
+    $currentUser = Auth::currentUser($config);
+    if ($currentUser === null) {
+        Response::error('unauthenticated', 'Login required.', 401);
+        return;
+    }
+
+    $currentPassword = is_string($request->body['current_password'] ?? null) ? $request->body['current_password'] : '';
+    $newPassword = is_string($request->body['new_password'] ?? null) ? $request->body['new_password'] : '';
+
+    if (!password_verify($currentPassword, $currentUser['password_hash'])) {
+        Response::error('validation_failed', 'Current password is incorrect.', 422, ['current_password' => 'Incorrect.']);
+        return;
+    }
+    if (!PasswordPolicy::isValid($newPassword)) {
+        $message = PasswordPolicy::describeViolations($newPassword);
+        Response::error('validation_failed', $message, 422, ['new_password' => $message]);
+        return;
+    }
+
+    (new UserRepo(Db::connect($config)))->updatePassword($currentUser['id'], password_hash($newPassword, PASSWORD_DEFAULT));
+    Response::noContent();
+});
+
 // ---------------------------------------------------------------- players
 
 $colorPattern = '/^#[0-9a-fA-F]{6}$/';
 
-/** @param array{id:int, name:string, avatar_path:?string, color:string, is_active:bool} $player */
+/** @param array{id:int, name:string, avatar_path:?string, color:string, is_active:bool, user_id:?int} $player */
 $playerPayload = static function (array $player): array {
     return [
         'id' => $player['id'],
@@ -100,6 +127,7 @@ $playerPayload = static function (array $player): array {
         'color' => $player['color'],
         'avatar_url' => $player['avatar_path'] !== null ? '/' . $player['avatar_path'] : '/default.svg',
         'is_active' => $player['is_active'],
+        'user_id' => $player['user_id'],
     ];
 };
 
@@ -171,6 +199,34 @@ $router->patch('/api/players/{id}', function (Request $request, string $id) use 
         return;
     }
 
+    // D29: linking a player to a login is admin-only, and null is a meaningful
+    // target value ("unlink") rather than "leave unchanged" - keep it a
+    // separate check/call from the fields above.
+    if (array_key_exists('user_id', $request->body)) {
+        $currentUser = Auth::currentUser($config);
+        if ($currentUser === null || !$currentUser['is_admin']) {
+            Response::error('forbidden', 'Admin privileges required.', 403);
+            return;
+        }
+
+        $rawUserId = $request->body['user_id'];
+        if ($rawUserId !== null && !is_int($rawUserId)) {
+            Response::error('validation_failed', 'Invalid player.', 422, ['user_id' => 'Must be a user id or null.']);
+            return;
+        }
+        if ($rawUserId !== null && (new UserRepo(Db::connect($config)))->find($rawUserId) === null) {
+            Response::error('validation_failed', 'Invalid player.', 422, ['user_id' => 'User not found.']);
+            return;
+        }
+
+        try {
+            $updated = $repo->linkUser((int) $id, $rawUserId);
+        } catch (DomainException $e) {
+            Response::error('validation_failed', $e->getMessage(), 422, ['user_id' => $e->getMessage()]);
+            return;
+        }
+    }
+
     Response::json($playerPayload($updated));
 });
 
@@ -231,6 +287,134 @@ $router->delete('/api/players/{id}', function (Request $request, string $id) use
     }
 
     $repo->softDelete((int) $id);
+    Response::noContent();
+});
+
+// ---------------------------------------------------------------- users (admin)
+
+$router->get('/api/users', function (Request $request) use ($config, $authUserPayload): void {
+    $currentUser = Auth::currentUser($config);
+    if ($currentUser === null || !$currentUser['is_admin']) {
+        Response::error('forbidden', 'Admin privileges required.', 403);
+        return;
+    }
+
+    $users = (new UserRepo(Db::connect($config)))->all();
+    Response::json(array_map($authUserPayload, $users));
+});
+
+$router->post('/api/users', function (Request $request) use ($config, $authUserPayload): void {
+    $currentUser = Auth::currentUser($config);
+    if ($currentUser === null || !$currentUser['is_admin']) {
+        Response::error('forbidden', 'Admin privileges required.', 403);
+        return;
+    }
+
+    $username = is_string($request->body['username'] ?? null) ? trim($request->body['username']) : '';
+    $displayName = is_string($request->body['display_name'] ?? null) ? trim($request->body['display_name']) : '';
+    $password = is_string($request->body['password'] ?? null) ? $request->body['password'] : '';
+    $isAdmin = (bool) ($request->body['is_admin'] ?? false);
+
+    $fields = [];
+    if ($username === '') {
+        $fields['username'] = 'Required.';
+    }
+    if ($displayName === '') {
+        $fields['display_name'] = 'Required.';
+    }
+    if (!PasswordPolicy::isValid($password)) {
+        $fields['password'] = PasswordPolicy::describeViolations($password);
+    }
+    if ($fields !== []) {
+        Response::error('validation_failed', 'Invalid user.', 422, $fields);
+        return;
+    }
+
+    $users = new UserRepo(Db::connect($config));
+    try {
+        $id = $users->create($username, password_hash($password, PASSWORD_DEFAULT), $displayName, $isAdmin);
+    } catch (DomainException $e) {
+        Response::error('validation_failed', $e->getMessage(), 422, ['username' => $e->getMessage()]);
+        return;
+    }
+
+    Response::json($authUserPayload($users->find($id)), 201);
+});
+
+$router->patch('/api/users/{id}', function (Request $request, string $id) use ($config, $authUserPayload): void {
+    $currentUser = Auth::currentUser($config);
+    if ($currentUser === null || !$currentUser['is_admin']) {
+        Response::error('forbidden', 'Admin privileges required.', 403);
+        return;
+    }
+
+    $users = new UserRepo(Db::connect($config));
+    $target = $users->find((int) $id);
+    if ($target === null) {
+        Response::error('not_found', 'User not found.', 404);
+        return;
+    }
+
+    $username = null;
+    if (array_key_exists('username', $request->body)) {
+        $username = is_string($request->body['username']) ? trim($request->body['username']) : '';
+        if ($username === '') {
+            Response::error('validation_failed', 'Invalid user.', 422, ['username' => 'Required.']);
+            return;
+        }
+    }
+
+    $displayName = null;
+    if (array_key_exists('display_name', $request->body)) {
+        $displayName = is_string($request->body['display_name']) ? trim($request->body['display_name']) : '';
+        if ($displayName === '') {
+            Response::error('validation_failed', 'Invalid user.', 422, ['display_name' => 'Required.']);
+            return;
+        }
+    }
+
+    $isAdmin = null;
+    if (array_key_exists('is_admin', $request->body)) {
+        $isAdmin = (bool) $request->body['is_admin'];
+        if (!$isAdmin && (int) $id === $currentUser['id']) {
+            Response::error('validation_failed', 'You cannot remove your own admin rights.', 422, ['is_admin' => 'Cannot remove your own admin rights.']);
+            return;
+        }
+    }
+
+    try {
+        $updated = $users->update((int) $id, $username, $displayName, $isAdmin);
+    } catch (DomainException $e) {
+        Response::error('validation_failed', $e->getMessage(), 422, ['username' => $e->getMessage()]);
+        return;
+    }
+
+    Response::json($authUserPayload($updated));
+});
+
+// No current-password check - the caller is already authenticated as admin.
+$router->post('/api/users/{id}/password', function (Request $request, string $id) use ($config): void {
+    $currentUser = Auth::currentUser($config);
+    if ($currentUser === null || !$currentUser['is_admin']) {
+        Response::error('forbidden', 'Admin privileges required.', 403);
+        return;
+    }
+
+    $users = new UserRepo(Db::connect($config));
+    $target = $users->find((int) $id);
+    if ($target === null) {
+        Response::error('not_found', 'User not found.', 404);
+        return;
+    }
+
+    $password = is_string($request->body['password'] ?? null) ? $request->body['password'] : '';
+    if (!PasswordPolicy::isValid($password)) {
+        $message = PasswordPolicy::describeViolations($password);
+        Response::error('validation_failed', $message, 422, ['password' => $message]);
+        return;
+    }
+
+    $users->updatePassword((int) $id, password_hash($password, PASSWORD_DEFAULT));
     Response::noContent();
 });
 

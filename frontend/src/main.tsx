@@ -5,14 +5,18 @@ import './styles/base.css';
 import './styles/scoreboard.css';
 import './styles/setup.css';
 import './styles/history.css';
+import './styles/profile.css';
 import { api } from './api.ts';
 import { route } from './router.ts';
+import type { Route } from './router.ts';
+import { AppNav } from './components/AppNav.tsx';
 import { GameDetail } from './routes/GameDetail.tsx';
 import { History } from './routes/History.tsx';
 import { Home } from './routes/Home.tsx';
 import { Login } from './routes/Login.tsx';
 import { NewGame } from './routes/NewGame.tsx';
 import { PlayerDetail } from './routes/PlayerDetail.tsx';
+import { Profile } from './routes/Profile.tsx';
 import { Scoreboard } from './routes/Scoreboard.tsx';
 import { Setup } from './routes/Setup.tsx';
 import { session } from './store.ts';
@@ -53,6 +57,16 @@ function App() {
     // Redirect effect above is about to fire.
     return <div class="centered-page">Redirecting…</div>;
   }
+
+  return (
+    <>
+      <AppNav />
+      {renderRoute(r)}
+    </>
+  );
+}
+
+function renderRoute(r: Exclude<Route, { name: 'login' }>) {
   if (r.name === 'home') {
     return <Home />;
   }
@@ -61,6 +75,9 @@ function App() {
   }
   if (r.name === 'setup') {
     return <Setup />;
+  }
+  if (r.name === 'profile') {
+    return <Profile />;
   }
   if (r.name === 'game') {
     return <Scoreboard id={r.id} />;

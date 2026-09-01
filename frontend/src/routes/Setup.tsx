@@ -3,29 +3,34 @@
 // live payout preview, fill helpers, duplicate).
 
 import { useEffect, useState } from 'preact/hooks';
+import { AvatarEditor, initials } from '../components/AvatarEditor.tsx';
 import { Confirm } from '../components/Confirm.tsx';
+import { PasswordRequirements } from '../components/PasswordRequirements.tsx';
 import { api, ApiError } from '../api.ts';
-import { lang, players, rulesets, theme } from '../store.ts';
-import type { Player, Ruleset } from '../types.ts';
+import { usePlayerEditor } from '../hooks/usePlayerEditor.ts';
+import { isPasswordValid } from '../passwordPolicy.ts';
+import { navigate } from '../router.ts';
+import { players, rulesets, session } from '../store.ts';
+import type { Player, Ruleset, User } from '../types.ts';
 
-type Tab = 'players' | 'rulesets';
-
-function cycleLang(): void {
-  lang.value = lang.value === 'both' ? 'en' : lang.value === 'en' ? 'zh' : 'both';
-}
+type Tab = 'players' | 'rulesets' | 'users';
 
 export function Setup() {
   const [tab, setTab] = useState<Tab>('players');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+
+  const isAdmin = session.value?.is_admin ?? false;
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.players(true), api.rulesets()])
-      .then(([playerList, rulesetList]) => {
+    Promise.all([api.players(true), api.rulesets(), isAdmin ? api.listUsers() : Promise.resolve([])])
+      .then(([playerList, rulesetList, userList]) => {
         if (cancelled) return;
         players.value = playerList;
         rulesets.value = rulesetList;
+        setUsers(userList);
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -36,7 +41,7 @@ export function Setup() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAdmin]);
 
   async function refreshPlayers(): Promise<void> {
     players.value = await api.players(true);
@@ -46,21 +51,12 @@ export function Setup() {
     rulesets.value = await api.rulesets();
   }
 
+  async function refreshUsers(): Promise<void> {
+    setUsers(await api.listUsers());
+  }
+
   return (
     <div class="setup-page">
-      <header class="top-toolbar">
-        <h1>Setup</h1>
-        <div class="toolbar-controls">
-          <a href="#/">Home</a>
-          <button onClick={cycleLang} title="Language">
-            {lang.value === 'both' ? '中/EN' : lang.value === 'en' ? 'EN' : '中'}
-          </button>
-          <button onClick={() => (theme.value = theme.value === 'dark' ? 'light' : 'dark')}>
-            {theme.value === 'dark' ? 'Light' : 'Dark'}
-          </button>
-        </div>
-      </header>
-
       <div class="setup-tabs">
         <button type="button" class={tab === 'players' ? 'tab-active' : ''} aria-pressed={tab === 'players'} onClick={() => setTab('players')}>
           Players
@@ -68,31 +64,32 @@ export function Setup() {
         <button type="button" class={tab === 'rulesets' ? 'tab-active' : ''} aria-pressed={tab === 'rulesets'} onClick={() => setTab('rulesets')}>
           Rulesets
         </button>
+        {isAdmin && (
+          <button type="button" class={tab === 'users' ? 'tab-active' : ''} aria-pressed={tab === 'users'} onClick={() => setTab('users')}>
+            Users
+          </button>
+        )}
       </div>
 
       {loading && <div class="centered-page">Loading…</div>}
       {loadError && <div class="setup-body form-error">{loadError}</div>}
-      {!loading && !loadError && tab === 'players' && <PlayersTab onChange={refreshPlayers} />}
+      {!loading && !loadError && tab === 'players' && (
+        <PlayersTab onChange={refreshPlayers} users={isAdmin ? users : undefined} />
+      )}
       {!loading && !loadError && tab === 'rulesets' && <RulesetsTab onChange={refreshRulesets} />}
+      {!loading && !loadError && tab === 'users' && isAdmin && <UsersTab users={users} onChange={refreshUsers} />}
     </div>
   );
 }
 
 // ---------------------------------------------------------------- Players
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const first = parts[0] ?? '';
-  const second = parts[1];
-  if (parts.length <= 1) return first.slice(0, 2).toUpperCase() || '?';
-  return `${first.charAt(0)}${(second ?? '').charAt(0)}`.toUpperCase();
-}
-
 interface PlayersTabProps {
   onChange: () => Promise<void>;
+  users?: User[]; // present only for admins; enables the "linked login" picker.
 }
 
-function PlayersTab({ onChange }: PlayersTabProps) {
+function PlayersTab({ onChange, users }: PlayersTabProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
@@ -166,7 +163,15 @@ function PlayersTab({ onChange }: PlayersTabProps) {
 
       <div class="player-grid">
         {activePlayers.map((p) => (
-          <PlayerCard key={p.id} player={p} editing={editingId === p.id} onEdit={() => setEditingId(p.id)} onDone={closeEditor} />
+          <PlayerCard
+            key={p.id}
+            player={p}
+            editing={editingId === p.id}
+            onEdit={() => setEditingId(p.id)}
+            onDone={closeEditor}
+            onSaved={onChange}
+            users={users}
+          />
         ))}
       </div>
 
@@ -175,7 +180,15 @@ function PlayersTab({ onChange }: PlayersTabProps) {
           <h3 class="setup-subheading">Retired</h3>
           <div class="player-grid">
             {retiredPlayers.map((p) => (
-              <PlayerCard key={p.id} player={p} editing={editingId === p.id} onEdit={() => setEditingId(p.id)} onDone={closeEditor} />
+              <PlayerCard
+                key={p.id}
+                player={p}
+                editing={editingId === p.id}
+                onEdit={() => setEditingId(p.id)}
+                onDone={closeEditor}
+                onSaved={onChange}
+                users={users}
+              />
             ))}
           </div>
         </>
@@ -189,89 +202,33 @@ interface PlayerCardProps {
   editing: boolean;
   onEdit: () => void;
   onDone: () => void;
+  onSaved: () => Promise<void>; // refreshes the list after an autosaved field, without closing the editor
+  users?: User[]; // present only for admins; enables the "linked login" picker.
 }
 
-function PlayerCard({ player, editing, onEdit, onDone }: PlayerCardProps) {
-  const [name, setName] = useState(player.name);
-  const [color, setColor] = useState(player.color);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function PlayerCard({ player, editing, onEdit, onDone, onSaved, users }: PlayerCardProps) {
+  const { name, setName, commitName, color, setColor, commitColor, preview, busy, error, uploadAvatar, removeAvatar, runAction } = usePlayerEditor(
+    player,
+    () => void onSaved(),
+    editing
+  );
+  const [linkedUserId, setLinkedUserId] = useState<number | null>(player.user_id);
 
   useEffect(() => {
-    setName(player.name);
-    setColor(player.color);
-    setPreview(null);
+    setLinkedUserId(player.user_id);
   }, [player.id, editing]);
 
-  useEffect(
-    () => () => {
-      if (preview) URL.revokeObjectURL(preview);
-    },
-    [preview]
-  );
-
-  async function save(): Promise<void> {
-    if (name.trim() === '') {
-      setError('Name is required.');
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      await api.updatePlayer(player.id, { name: name.trim(), color });
-      onDone();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to save.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onFileChange(e: Event): Promise<void> {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    setPreview(URL.createObjectURL(file));
-    setBusy(true);
-    setError(null);
-    try {
-      await api.uploadAvatar(player.id, file);
-      onDone();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to upload avatar.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function removeAvatar(): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      await api.removeAvatar(player.id);
-      onDone();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to remove avatar.');
-    } finally {
-      setBusy(false);
-    }
+  async function commitLinkedUser(next: number | null): Promise<void> {
+    setLinkedUserId(next);
+    await runAction(() => api.updatePlayer(player.id, { user_id: next }), () => void onSaved(), 'Failed to update linked login.');
   }
 
   async function toggleActive(): Promise<void> {
-    setBusy(true);
-    setError(null);
-    try {
-      if (player.is_active) {
-        await api.retirePlayer(player.id);
-      } else {
-        await api.updatePlayer(player.id, { is_active: true });
-      }
-      onDone();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to update player.');
-    } finally {
-      setBusy(false);
-    }
+    await runAction(
+      () => (player.is_active ? api.retirePlayer(player.id) : api.updatePlayer(player.id, { is_active: true })),
+      () => onDone(),
+      'Failed to update player.'
+    );
   }
 
   if (!editing) {
@@ -291,37 +248,365 @@ function PlayerCard({ player, editing, onEdit, onDone }: PlayerCardProps) {
   return (
     <div class="player-card player-card-editing">
       {error && <div class="form-error">{error}</div>}
-      <span class="player-card-avatar" style={{ '--player-color': color } as Record<string, string>}>
-        <img src={preview ?? player.avatar_url} alt="" />
-        {!preview && player.avatar_url === '/default.svg' && <span class="player-card-initials">{initials(name)}</span>}
-      </span>
+      <AvatarEditor
+        id={`avatar-upload-${player.id}`}
+        avatarUrl={player.avatar_url}
+        preview={preview}
+        color={color}
+        name={name}
+        busy={busy}
+        onFileChange={(file) => void uploadAvatar(file)}
+        onRemove={() => void removeAvatar()}
+      />
       <div class="field">
         <label>Name</label>
-        <input value={name} onInput={(e) => setName((e.target as HTMLInputElement).value)} disabled={busy} />
+        <input
+          value={name}
+          onInput={(e) => setName((e.target as HTMLInputElement).value)}
+          onBlur={(e) => void commitName((e.target as HTMLInputElement).value)}
+          disabled={busy}
+        />
       </div>
       <div class="field">
         <label>Color</label>
-        <input type="color" value={color} onInput={(e) => setColor((e.target as HTMLInputElement).value)} disabled={busy} />
+        <input
+          type="color"
+          value={color}
+          onInput={(e) => setColor((e.target as HTMLInputElement).value)}
+          onChange={(e) => void commitColor((e.target as HTMLInputElement).value)}
+          disabled={busy}
+        />
       </div>
-      <div class="field">
-        <label>Avatar</label>
-        <input type="file" accept="image/*" onChange={(e) => void onFileChange(e)} disabled={busy} />
-        {player.avatar_url !== '/default.svg' && (
-          <button type="button" onClick={() => void removeAvatar()} disabled={busy}>
-            Remove avatar
-          </button>
-        )}
-      </div>
+      {users && (
+        <div class="field">
+          <label>Linked login</label>
+          <select
+            value={linkedUserId ?? ''}
+            onChange={(e) => {
+              const v = (e.target as HTMLSelectElement).value;
+              void commitLinkedUser(v === '' ? null : Number(v));
+            }}
+            disabled={busy}
+          >
+            <option value="">— none —</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.username} — {u.display_name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div class="modal-actions player-card-actions">
         <button type="button" class={player.is_active ? 'danger-btn' : ''} disabled={busy} onClick={() => void toggleActive()}>
           {player.is_active ? 'Retire' : 'Reactivate'}
         </button>
-        <button type="button" disabled={busy} onClick={onDone}>
+        <button type="button" class="primary-btn" disabled={busy} onClick={onDone}>
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- Users (admin only, D29)
+
+interface UsersTabProps {
+  users: User[];
+  onChange: () => Promise<void>;
+}
+
+function UsersTab({ users, onChange }: UsersTabProps) {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [resettingId, setResettingId] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newIsAdmin, setNewIsAdmin] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function createUser(e: Event): Promise<void> {
+    e.preventDefault();
+    if (newUsername.trim() === '' || newDisplayName.trim() === '' || !isPasswordValid(newPassword)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.createUser({
+        username: newUsername.trim(),
+        display_name: newDisplayName.trim(),
+        password: newPassword,
+        is_admin: newIsAdmin,
+      });
+      setNewUsername('');
+      setNewDisplayName('');
+      setNewPassword('');
+      setNewIsAdmin(false);
+      setCreating(false);
+      await onChange();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to create user.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onSelfEdited(): Promise<void> {
+    // D29: no server-side way to end this specific browser session other
+    // than logging it out ourselves.
+    await api.logout().catch(() => {});
+    session.value = null;
+    navigate('#/login');
+  }
+
+  // Only a successful save triggers the self-account force-logout — merely
+  // opening then closing the editor with no changes must not log anyone out.
+  async function onSaved(editedId: number): Promise<void> {
+    setEditingId(null);
+    if (editedId === session.value?.id) {
+      await onSelfEdited();
+      return;
+    }
+    await onChange();
+  }
+
+  async function closeResetPassword(resetId: number): Promise<void> {
+    setResettingId(null);
+    if (resetId === session.value?.id) {
+      await onSelfEdited();
+      return;
+    }
+  }
+
+  return (
+    <div class="setup-body">
+      {error && <div class="form-error">{error}</div>}
+
+      <div class="setup-toolbar">
+        {!creating && (
+          <button type="button" class="primary-btn" onClick={() => setCreating(true)}>
+            + Add user
+          </button>
+        )}
+        {creating && (
+          <form class="inline-create-form user-create-form" onSubmit={(e) => void createUser(e)}>
+            <input
+              autoFocus
+              placeholder="Username"
+              value={newUsername}
+              onInput={(e) => setNewUsername((e.target as HTMLInputElement).value)}
+              disabled={busy}
+            />
+            <input
+              placeholder="Display name"
+              value={newDisplayName}
+              onInput={(e) => setNewDisplayName((e.target as HTMLInputElement).value)}
+              disabled={busy}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={newPassword}
+              onInput={(e) => setNewPassword((e.target as HTMLInputElement).value)}
+              disabled={busy}
+            />
+            <PasswordRequirements password={newPassword} />
+            <label class="user-admin-checkbox">
+              <input type="checkbox" checked={newIsAdmin} onChange={(e) => setNewIsAdmin((e.target as HTMLInputElement).checked)} disabled={busy} />
+              Admin
+            </label>
+            <button
+              type="submit"
+              class="primary-btn"
+              disabled={busy || newUsername.trim() === '' || newDisplayName.trim() === '' || !isPasswordValid(newPassword)}
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setCreating(false);
+                setNewUsername('');
+                setNewDisplayName('');
+                setNewPassword('');
+                setNewIsAdmin(false);
+              }}
+            >
+              Cancel
+            </button>
+          </form>
+        )}
+      </div>
+
+      <div class="user-list">
+        {users.map((u) => (
+          <UserRow
+            key={u.id}
+            user={u}
+            editing={editingId === u.id}
+            onEdit={() => setEditingId(u.id)}
+            onSaved={() => void onSaved(u.id)}
+            onClose={() => setEditingId(null)}
+            onResetPassword={() => setResettingId(u.id)}
+          />
+        ))}
+      </div>
+
+      {resettingId !== null && (
+        <ResetPasswordModal onDone={() => void closeResetPassword(resettingId)} onClose={() => setResettingId(null)} userId={resettingId} />
+      )}
+    </div>
+  );
+}
+
+interface UserRowProps {
+  user: User;
+  editing: boolean;
+  onEdit: () => void;
+  onSaved: () => void;
+  onClose: () => void;
+  onResetPassword: () => void;
+}
+
+function UserRow({ user, editing, onEdit, onSaved, onClose, onResetPassword }: UserRowProps) {
+  const [username, setUsername] = useState(user.username);
+  const [displayName, setDisplayName] = useState(user.display_name);
+  const [isAdmin, setIsAdmin] = useState(user.is_admin);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setUsername(user.username);
+    setDisplayName(user.display_name);
+    setIsAdmin(user.is_admin);
+  }, [user.id, editing]);
+
+  async function save(): Promise<void> {
+    if (username.trim() === '' || displayName.trim() === '') {
+      setError('Username and display name are required.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api.updateUser(user.id, { username: username.trim(), display_name: displayName.trim(), is_admin: isAdmin });
+      onSaved();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to save.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <button type="button" class="user-row" onClick={onEdit}>
+        <span class="user-row-username">{user.username}</span>
+        <span class="user-row-display-name">{user.display_name}</span>
+        {user.is_admin && <span class="user-row-admin-badge">Admin</span>}
+      </button>
+    );
+  }
+
+  return (
+    <div class="user-row user-row-editing">
+      {error && <div class="form-error">{error}</div>}
+      <div class="field">
+        <label>Username</label>
+        <input value={username} onInput={(e) => setUsername((e.target as HTMLInputElement).value)} disabled={busy} />
+      </div>
+      <div class="field">
+        <label>Display name</label>
+        <input value={displayName} onInput={(e) => setDisplayName((e.target as HTMLInputElement).value)} disabled={busy} />
+      </div>
+      <label class="user-admin-checkbox">
+        <input type="checkbox" checked={isAdmin} onChange={(e) => setIsAdmin((e.target as HTMLInputElement).checked)} disabled={busy} />
+        Admin
+      </label>
+      <div class="modal-actions player-card-actions">
+        <button type="button" disabled={busy} onClick={onResetPassword}>
+          Reset password
+        </button>
+        <button type="button" disabled={busy} onClick={onClose}>
           Close
         </button>
         <button type="button" class="primary-btn" disabled={busy} onClick={() => void save()}>
           Save
         </button>
+      </div>
+    </div>
+  );
+}
+
+interface ResetPasswordModalProps {
+  userId: number;
+  onDone: () => void;
+  onClose: () => void;
+}
+
+function ResetPasswordModal({ userId, onDone, onClose }: ResetPasswordModalProps) {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const valid = isPasswordValid(password) && password === confirmPassword;
+
+  async function submit(): Promise<void> {
+    if (!valid) {
+      if (password !== confirmPassword) setError('Password and confirmation do not match.');
+      else if (!isPasswordValid(password)) setError('Password does not meet the requirements below.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await api.resetUserPassword(userId, password);
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to reset password.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div class="modal-backdrop" onClick={onClose}>
+      <div class="modal-card" onClick={(e) => e.stopPropagation()}>
+        <h2>Reset password</h2>
+        {error && <div class="form-error">{error}</div>}
+        <div class="field">
+          <label for="rp-new">New password</label>
+          <input
+            id="rp-new"
+            autoFocus
+            type="password"
+            value={password}
+            onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
+            disabled={busy}
+          />
+        </div>
+        <PasswordRequirements password={password} />
+        <div class="field">
+          <label for="rp-confirm">Confirm new password</label>
+          <input
+            id="rp-confirm"
+            type="password"
+            value={confirmPassword}
+            onInput={(e) => setConfirmPassword((e.target as HTMLInputElement).value)}
+            disabled={busy}
+          />
+        </div>
+        <div class="modal-actions">
+          <button type="button" onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button type="button" class="primary-btn" disabled={busy || !valid} onClick={() => void submit()}>
+            Reset password
+          </button>
+        </div>
       </div>
     </div>
   );

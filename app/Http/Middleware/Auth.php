@@ -18,6 +18,13 @@ final class Auth
 {
     private const STATE_CHANGING = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
+    // 30 days - a living-room app, nobody re-logs in at the table. Drives
+    // both the cookie's lifetime and session.gc_maxlifetime below - PHP's
+    // gc_maxlifetime defaults to 1440s (24 min), which was silently
+    // garbage-collecting the server-side session file out from under a
+    // still-valid 30-day cookie during any gap that long between requests.
+    private const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
+
     // The only routes that do not require a session. Keep in sync with
     // docs-initial-build/03-api.md § Auth and § Health.
     private const EXEMPT = [
@@ -29,9 +36,10 @@ final class Auth
     /** @param array<string, mixed> $config */
     public static function start(array $config): void
     {
+        ini_set('session.gc_maxlifetime', (string) self::SESSION_LIFETIME_SECONDS);
         session_name((string) $config['session_name']);
         session_set_cookie_params([
-            'lifetime' => 60 * 60 * 24 * 30, // 30 days - a living-room app, nobody re-logs in at the table.
+            'lifetime' => self::SESSION_LIFETIME_SECONDS,
             'path' => '/',
             'httponly' => true,
             'samesite' => 'Lax',

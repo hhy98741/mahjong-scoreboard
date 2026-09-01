@@ -7,12 +7,8 @@ import { api, ApiError } from '../api.ts';
 import { FaanHistogram } from '../components/FaanHistogram.tsx';
 import { ScoreChart } from '../components/ScoreChart.tsx';
 import { StatsFilterBar } from '../components/StatsFilterBar.tsx';
-import { lang, theme } from '../store.ts';
+import { lang } from '../store.ts';
 import type { GameSummary, PlayerStats, StatsFilters } from '../types.ts';
-
-function cycleLang(): void {
-  lang.value = lang.value === 'both' ? 'en' : lang.value === 'en' ? 'zh' : 'both';
-}
 
 function formatRate(rate: number | null): string {
   return rate === null ? '—' : `${Math.round(rate * 100)}%`;
@@ -80,15 +76,6 @@ export function PlayerDetail({ id }: PlayerDetailProps) {
     <div class="history-page">
       <header class="top-toolbar">
         <h1 style={player ? { color: player.color } : undefined}>{player?.name ?? `Player #${id}`}</h1>
-        <div class="toolbar-controls">
-          <a href="#/history">History</a>
-          <button onClick={cycleLang} title="Language">
-            {lang.value === 'both' ? '中/EN' : lang.value === 'en' ? 'EN' : '中'}
-          </button>
-          <button onClick={() => (theme.value = theme.value === 'dark' ? 'light' : 'dark')}>
-            {theme.value === 'dark' ? 'Light' : 'Dark'}
-          </button>
-        </div>
       </header>
 
       <div class="history-body">

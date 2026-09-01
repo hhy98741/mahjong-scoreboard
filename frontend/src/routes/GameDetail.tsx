@@ -7,12 +7,8 @@ import { useEffect, useState } from 'preact/hooks';
 import { api, ApiError } from '../api.ts';
 import { HandHistory } from '../components/HandHistory.tsx';
 import { ScoreChart } from '../components/ScoreChart.tsx';
-import { lang, theme } from '../store.ts';
+import { lang } from '../store.ts';
 import type { GameCurve, GameStatePayload } from '../types.ts';
-
-function cycleLang(): void {
-  lang.value = lang.value === 'both' ? 'en' : lang.value === 'en' ? 'zh' : 'both';
-}
 
 interface GameDetailProps {
   id: number;
@@ -48,15 +44,6 @@ export function GameDetail({ id }: GameDetailProps) {
     <div class="history-page">
       <header class="top-toolbar">
         <h1>{game?.game.name ?? `Game #${id}`}</h1>
-        <div class="toolbar-controls">
-          <a href="#/history">History</a>
-          <button onClick={cycleLang} title="Language">
-            {lang.value === 'both' ? '中/EN' : lang.value === 'en' ? 'EN' : '中'}
-          </button>
-          <button onClick={() => (theme.value = theme.value === 'dark' ? 'light' : 'dark')}>
-            {theme.value === 'dark' ? 'Light' : 'Dark'}
-          </button>
-        </div>
       </header>
 
       <div class="history-body">
