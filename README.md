@@ -53,6 +53,7 @@ bun run dev            # Vite dev server, proxies /api to the local PHP server
 bun run serve:api      # php -S localhost:8080 -t public_html public_html/router.php
 bun run build          # production build into dist/
 composer test          # PHPUnit - the scoring engine tests must stay green
+bun run demo           # live-site demo-data seeder, visible browser - see tests/e2e/demo.mjs
 
 ./deploy/deploy.sh     # build + rsync code (backs up, smoke-tests, rolls back on failure)
 ./deploy/migrate.sh    # schema changes only - deliberate and separate

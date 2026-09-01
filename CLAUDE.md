@@ -73,6 +73,7 @@ bun run build          # production build into dist/
 bun run serve:api      # php -S localhost:8080 -t public_html public_html/router.php
 composer test          # PHPUnit — scoring engine tests must stay green
 bun run test:e2e       # Playwright UI regression suite — see § End-to-end regression tests
+bun run demo           # live-site demo-data seeder, visible browser — see tests/e2e/demo.mjs
 ./deploy/deploy.sh     # rsync build + PHP app to shared hosting (code only)
 ./deploy/migrate.sh    # schema changes - deliberate and separate from deploy
 ./deploy/backup.sh     # database dump + avatar pull
