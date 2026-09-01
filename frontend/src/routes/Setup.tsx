@@ -739,6 +739,21 @@ function RulesetsTab({ onChange }: RulesetsTabProps) {
     }
   }
 
+  async function makeDefault(): Promise<void> {
+    if (!form?.id) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const saved = await api.setDefaultRuleset(form.id);
+      await onChange();
+      setForm(toFormState(saved));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to set default ruleset.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function remove(): Promise<void> {
     if (!form?.id) return;
     setBusy(true);
@@ -879,6 +894,11 @@ function RulesetsTab({ onChange }: RulesetsTabProps) {
             {form.id !== null && (
               <button type="button" class="danger-btn" disabled={busy} onClick={() => setDeleteConfirm(true)}>
                 Delete
+              </button>
+            )}
+            {form.id !== null && !rulesets.value.find((r) => r.id === form.id)?.is_default && (
+              <button type="button" disabled={busy} onClick={() => void makeDefault()}>
+                Make default
               </button>
             )}
             <button type="button" class="primary-btn" disabled={busy} onClick={() => void save()}>

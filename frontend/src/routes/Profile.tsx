@@ -50,10 +50,6 @@ export function Profile() {
 
   return (
     <div class="profile-page">
-      <header class="top-toolbar">
-        <h1>Profile</h1>
-      </header>
-
       <div class="profile-body">
         {loadError && <div class="form-error">{loadError}</div>}
 

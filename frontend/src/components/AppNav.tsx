@@ -27,7 +27,7 @@ export function AppNav() {
           </a>
         ))}
       </nav>
-      <ProfileMenu />
+      <ProfileMenu active={currentName === 'profile'} />
     </header>
   );
 }

@@ -151,6 +151,7 @@ export const api = {
   rulesets: (): Promise<Ruleset[]> => request('GET', '/api/rulesets'),
   createRuleset: (body: RulesetRequest): Promise<Ruleset> => request('POST', '/api/rulesets', body),
   updateRuleset: (id: number, body: RulesetRequest): Promise<Ruleset> => request('PUT', `/api/rulesets/${id}`, body),
+  setDefaultRuleset: (id: number): Promise<Ruleset> => request('PATCH', `/api/rulesets/${id}/default`),
   deleteRuleset: (id: number): Promise<null> => request('DELETE', `/api/rulesets/${id}`),
 
   createGame: (body: GameCreateRequest): Promise<GameStatePayload> => request('POST', '/api/games', body),

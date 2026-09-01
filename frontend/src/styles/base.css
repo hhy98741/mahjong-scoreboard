@@ -198,6 +198,12 @@ a {
   border-radius: 6px;
 }
 
+.profile-menu-trigger.active {
+  color: var(--accent);
+  font-weight: 600;
+  border-color: var(--accent);
+}
+
 .profile-menu-dropdown {
   display: none;
   position: absolute;

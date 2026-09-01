@@ -100,6 +100,27 @@ final class RulesetRepo
         $this->pdo->prepare('DELETE FROM rulesets WHERE id = ?')->execute([$id]);
     }
 
+    /**
+     * Only one ruleset is ever is_default: clear it everywhere, then set it
+     * on $id, in one transaction so no window exists with zero or two.
+     *
+     * @return array{id:int, name:string, table_max_faan:int, payment_rule:string, penalty_default:int, is_default:bool, points:array<string,int>}
+     */
+    public function setDefault(int $id): array
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $this->pdo->exec('UPDATE rulesets SET is_default = 0 WHERE is_default = 1');
+            $this->pdo->prepare('UPDATE rulesets SET is_default = 1 WHERE id = ?')->execute([$id]);
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+
+        return $this->find($id);
+    }
+
     // Guards DELETE /api/rulesets/{id} (docs-initial-build/03-api.md § Rulesets): completed
     // games carry their own snapshot and are unaffected, so only an
     // in_progress reference blocks the delete.

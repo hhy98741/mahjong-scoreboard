@@ -538,6 +538,17 @@ $router->put('/api/rulesets/{id}', function (Request $request, string $id) use (
     Response::json($rulesetPayload($ruleset));
 });
 
+$router->patch('/api/rulesets/{id}/default', function (Request $request, string $id) use ($config, $rulesetPayload): void {
+    $repo = new RulesetRepo(Db::connect($config));
+    $ruleset = $repo->find((int) $id);
+    if ($ruleset === null) {
+        Response::error('not_found', 'Ruleset not found.', 404);
+        return;
+    }
+
+    Response::json($rulesetPayload($repo->setDefault((int) $id)));
+});
+
 $router->delete('/api/rulesets/{id}', function (Request $request, string $id) use ($config): void {
     $repo = new RulesetRepo(Db::connect($config));
     $ruleset = $repo->find((int) $id);

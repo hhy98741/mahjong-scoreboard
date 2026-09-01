@@ -6,7 +6,11 @@ import { api } from '../api.ts';
 import { navigate } from '../router.ts';
 import { session } from '../store.ts';
 
-export function ProfileMenu() {
+interface ProfileMenuProps {
+  active: boolean;
+}
+
+export function ProfileMenu({ active }: ProfileMenuProps) {
   async function logout(): Promise<void> {
     await api.logout().catch(() => {});
     session.value = null;
@@ -17,7 +21,7 @@ export function ProfileMenu() {
     <div class="profile-menu">
       <a
         href="#/profile"
-        class="profile-menu-trigger"
+        class={active ? 'profile-menu-trigger active' : 'profile-menu-trigger'}
         // Clicking navigates but leaves the anchor focused, which keeps the
         // dropdown open (:focus-within) even after the mouse moves away -
         // blur it here so only an actual hover/keyboard-tab keeps it open.
