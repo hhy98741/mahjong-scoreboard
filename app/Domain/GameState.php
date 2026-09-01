@@ -75,12 +75,18 @@ final class GameState
         $isComplete = false;
 
         if (!$dealerStays) {
-            $dealerWindIndex = self::nextDealer($this->dealerWindIndex, $this->occupied);
-            if ($dealerWindIndex === 0) {
-                $roundWind++;
-                if ($roundWind === 4) {
-                    $isComplete = true;
-                }
+            $nextDealerWindIndex = self::nextDealer($this->dealerWindIndex, $this->occupied);
+            $nextRoundWind = $this->roundWind + ($nextDealerWindIndex === 0 ? 1 : 0);
+
+            if ($nextRoundWind === 4) {
+                // The just-applied hand completed North's last deal. There is no
+                // fifth round to hand off to, so freeze dealer/round at the hand
+                // that was actually played instead of rolling into a round that
+                // will never be dealt — that's the table's final resting position.
+                $isComplete = true;
+            } else {
+                $dealerWindIndex = $nextDealerWindIndex;
+                $roundWind = $nextRoundWind;
             }
         }
 

@@ -321,6 +321,26 @@ final class GameStateTest extends TestCase
         $this->assertSame(2, $state2->dealPosition()); // Deal 2 of 2
     }
 
+    public function testS16CompletionFreezesDealerAndRoundAtTheLastHandActuallyDealt(): void
+    {
+        // 4 players: North's last deal (chair 3) completes the game. The table
+        // should rest there, not roll forward to a fifth round's phantom East.
+        $occupied = [0, 1, 2, 3];
+        $state = GameState::replay($this->seatsFor($occupied), $this->buildRotationHands($occupied, 16));
+        $this->assertTrue($state->isComplete);
+        $this->assertSame(3, $state->roundWind); // North, not a wrapped 4
+        $this->assertSame(3, $state->dealerWindIndex);
+        $this->assertSame(4, $state->dealPosition()); // Deal 4 of 4, not 1 of 4
+
+        // 2 players: same idea, smaller occupied set.
+        $occupied2 = [0, 2];
+        $state2 = GameState::replay($this->seatsFor($occupied2), $this->buildRotationHands($occupied2, 8));
+        $this->assertTrue($state2->isComplete);
+        $this->assertSame(3, $state2->roundWind); // North
+        $this->assertSame(2, $state2->dealerWindIndex);
+        $this->assertSame(2, $state2->dealPosition()); // Deal 2 of 2, not 1 of 2
+    }
+
     // ---- Invariants ----
 
     public function testI3AGameCannotCompleteBeforeFourNHandsAcrossAllPlayerCounts(): void

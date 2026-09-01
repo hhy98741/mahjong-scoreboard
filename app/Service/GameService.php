@@ -446,9 +446,10 @@ final class GameService
             ];
         }
 
-        // A completed game's replayed round_wind can be 4 (wrapped past North) -
-        // clamp for display; round_name has no "complete" label.
-        $displayRoundWind = min($state->roundWind, 3);
+        // GameState freezes round_wind/dealer_wind_index at the last hand actually
+        // dealt once the game completes (see GameState::applyHand), so this is
+        // always 0-3 here - never the phantom 5th round.
+        $displayRoundWind = $state->roundWind;
 
         $handsPayload = [];
         foreach (array_reverse($handRows) as $h) {
